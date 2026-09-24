@@ -202,3 +202,28 @@ export async function removeCircleMember(circleId: string, userId: string) {
 
   if (error) throw error
 }
+
+
+export async function setCircleMemberRole(
+  circleId: string,
+  userId: string,
+  role: Extract<CircleMemberRole, 'admin' | 'member'>,
+) {
+  const { data, error } = await supabase.functions.invoke('circle-member-role', {
+    body: {
+      circle_id: circleId,
+      user_id: userId,
+      role,
+    },
+  })
+
+  if (error) throw error
+  if (!data?.user_id || !data?.role) {
+    throw new Error('Não foi possível alterar o papel deste membro.')
+  }
+
+  return {
+    userId: String(data.user_id),
+    role: data.role as Extract<CircleMemberRole, 'admin' | 'member'>,
+  }
+}
