@@ -8,18 +8,33 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.junq.junqlife"
+      "bundleIdentifier": "com.junq.junqlife",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O JunqLife usa sua localização para compartilhar sua posição com os círculos que você ativar.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O JunqLife usa localização em segundo plano enquanto o rastreamento estiver ligado.",
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "package": "com.junq.junqlife",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "static"
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true,
