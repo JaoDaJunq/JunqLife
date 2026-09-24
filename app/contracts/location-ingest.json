@@ -1,0 +1,11 @@
+{
+  "latitude": -29.000000,
+  "longitude": -51.000000,
+  "accuracy_m": 12.5,
+  "speed_mps": 0.0,
+  "heading_deg": 0.0,
+  "altitude_m": null,
+  "battery_level": 0.78,
+  "recorded_at": "2026-09-24T03:00:00Z",
+  "device_id": "uuid-do-device"
+}
