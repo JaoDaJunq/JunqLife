@@ -15,6 +15,7 @@ import {
   listCircleMembers,
   listCircles,
   removeCircleMember,
+  setCircleMemberRole,
   type Circle,
   type CircleMemberDetails,
 } from '@/src/lib/api'
@@ -71,6 +72,41 @@ export default function CircleManagementScreen() {
   )
 
   const isOwner = circle?.owner_id === user?.id
+
+  const changeRole = (member: CircleMemberDetails) => {
+    if (!circleId || !isOwner || member.role === 'owner' || busyUserId) return
+
+    const nextRole = member.role === 'admin' ? 'member' : 'admin'
+    const actionLabel = nextRole === 'admin' ? 'Tornar admin' : 'Remover admin'
+
+    Alert.alert(
+      `${actionLabel}?`,
+      nextRole === 'admin'
+        ? `${member.displayName} poderá gerar convites para este círculo.`
+        : `${member.displayName} volta a ser um membro comum.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: actionLabel,
+          onPress: async () => {
+            setBusyUserId(member.userId)
+            try {
+              const result = await setCircleMemberRole(circleId, member.userId, nextRole)
+              setMembers((current) =>
+                current.map((item) =>
+                  item.userId === result.userId ? { ...item, role: result.role } : item,
+                ),
+              )
+            } catch (error) {
+              Alert.alert('Não foi possível alterar o papel', errorMessage(error))
+            } finally {
+              setBusyUserId(null)
+            }
+          },
+        },
+      ],
+    )
+  }
 
   const removeMember = (member: CircleMemberDetails) => {
     if (!circleId || member.role === 'owner' || busyUserId) return
@@ -210,15 +246,30 @@ export default function CircleManagementScreen() {
               </View>
 
               {canRemove && (
-                <Pressable
-                  onPress={() => removeMember(member)}
-                  disabled={Boolean(busyUserId)}
-                  style={styles.removeButton}
-                >
-                  <Text style={styles.removeText}>
-                    {busyUserId === member.userId ? '...' : 'Remover'}
-                  </Text>
-                </Pressable>
+                <View style={styles.memberActions}>
+                  <Pressable
+                    onPress={() => changeRole(member)}
+                    disabled={Boolean(busyUserId)}
+                    style={styles.roleAction}
+                  >
+                    <Text style={styles.roleActionText}>
+                      {busyUserId === member.userId
+                        ? '...'
+                        : member.role === 'admin'
+                          ? 'Remover admin'
+                          : 'Tornar admin'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeMember(member)}
+                    disabled={Boolean(busyUserId)}
+                    style={styles.removeButton}
+                  >
+                    <Text style={styles.removeText}>
+                      {busyUserId === member.userId ? '...' : 'Remover'}
+                    </Text>
+                  </Pressable>
+                </View>
               )}
             </View>
           )
@@ -277,8 +328,11 @@ const styles = StyleSheet.create({
   roleAdmin: { backgroundColor: '#F0ECFF' },
   roleText: { color: '#4A5660', fontSize: 11, fontWeight: '900' },
   joinedText: { color: '#8A949C', fontSize: 11 },
-  removeButton: { paddingHorizontal: 10, paddingVertical: 8 },
-  removeText: { color: '#C0392B', fontWeight: '800', fontSize: 12 },
+  memberActions: { alignItems: 'flex-end', gap: 4 },
+  roleAction: { paddingHorizontal: 8, paddingVertical: 5 },
+  roleActionText: { color: '#356AE6', fontWeight: '800', fontSize: 11 },
+  removeButton: { paddingHorizontal: 8, paddingVertical: 5 },
+  removeText: { color: '#C0392B', fontWeight: '800', fontSize: 11 },
   ownerNote: { backgroundColor: '#FFF5DF', borderRadius: 20, padding: 18, gap: 5 },
   ownerNoteTitle: { color: '#6E4E08', fontWeight: '900' },
   ownerNoteText: { color: '#80672E', lineHeight: 19 },
