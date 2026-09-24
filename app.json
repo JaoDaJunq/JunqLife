@@ -12,7 +12,9 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "O JunqLife usa sua localização para compartilhar sua posição com os círculos que você ativar.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "O JunqLife usa localização em segundo plano enquanto o rastreamento estiver ligado.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -34,7 +36,8 @@
       "expo-router",
       "expo-sqlite",
       "expo-secure-store",
-      "expo-dev-client"
+      "expo-dev-client",
+      "@maplibre/maplibre-react-native"
     ],
     "experiments": {
       "typedRoutes": true,
