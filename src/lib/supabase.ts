@@ -23,6 +23,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     storage: browserStorage,
     autoRefreshToken: typeof window !== 'undefined',
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: typeof window !== 'undefined',
   },
 })
