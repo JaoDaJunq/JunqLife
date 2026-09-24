@@ -79,6 +79,7 @@ function AuthScreen() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [resending, setResending] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   const submit = async () => {
     if (!email.trim() || password.length < 6 || (mode === 'signup' && !name.trim())) {
@@ -113,6 +114,31 @@ function AuthScreen() {
       Alert.alert('Não foi possível continuar', authErrorMessage(error))
     } finally {
       setBusy(false)
+    }
+  }
+
+  const sendPasswordReset = async () => {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      Alert.alert('Informe seu e-mail', 'Digite o e-mail da conta para recuperar a senha.')
+      return
+    }
+
+    setResetting(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: WEB_APP_URL,
+      })
+      if (error) throw error
+
+      Alert.alert(
+        'E-mail de recuperação enviado',
+        'Abra o e-mail do JunqLife e toque no link. O navegador vai abrir uma tela para definir a nova senha.',
+      )
+    } catch (error) {
+      Alert.alert('Não foi possível enviar o reset', authErrorMessage(error))
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -189,12 +215,92 @@ function AuthScreen() {
           </Pressable>
 
           {mode === 'login' && (
-            <Pressable onPress={resendConfirmation} disabled={resending || busy}>
-              <Text style={styles.linkMuted}>
-                {resending ? 'Reenviando confirmação...' : 'Não confirmou o e-mail? Reenviar confirmação'}
-              </Text>
-            </Pressable>
+            <>
+              <Pressable onPress={sendPasswordReset} disabled={resetting || busy}>
+                <Text style={styles.linkMuted}>
+                  {resetting ? 'Enviando recuperação...' : 'Esqueceu a senha? Redefinir'}
+                </Text>
+              </Pressable>
+
+              <Pressable onPress={resendConfirmation} disabled={resending || busy}>
+                <Text style={styles.linkMuted}>
+                  {resending ? 'Reenviando confirmação...' : 'Não confirmou o e-mail? Reenviar confirmação'}
+                </Text>
+              </Pressable>
+            </>
           )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  )
+}
+
+
+function RecoveryScreen() {
+  const { clearRecovery } = useAuth()
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const updatePassword = async () => {
+    if (password.length < 8) {
+      Alert.alert('Senha muito curta', 'Use pelo menos 8 caracteres.')
+      return
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Senhas diferentes', 'Digite a mesma senha nos dois campos.')
+      return
+    }
+
+    setBusy(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+
+      clearRecovery()
+      await supabase.auth.signOut()
+      Alert.alert('Senha redefinida', 'Agora entre no JunqLife usando a nova senha.')
+    } catch (error) {
+      Alert.alert('Não foi possível redefinir', authErrorMessage(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.authPage} keyboardShouldPersistTaps="handled">
+        <View style={styles.brandBlock}>
+          <Text style={styles.brand}>JunqLife</Text>
+          <Text style={styles.subtitle}>Defina uma nova senha para sua conta.</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Redefinir senha</Text>
+          <Text style={styles.recoveryHelp}>
+            Você abriu um link de recuperação válido. Escolha uma senha nova e depois volte ao aplicativo.
+          </Text>
+
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Nova senha"
+            secureTextEntry
+            style={styles.input}
+          />
+          <TextInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirmar nova senha"
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <Button
+            title={busy ? 'Salvando...' : 'Salvar nova senha'}
+            onPress={updatePassword}
+            disabled={busy}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -492,7 +598,7 @@ function HomeScreen() {
 }
 
 export default function Index() {
-  const { loading, user } = useAuth()
+  const { loading, user, recoveryMode } = useAuth()
 
   if (loading) {
     return (
@@ -502,6 +608,7 @@ export default function Index() {
     )
   }
 
+  if (recoveryMode && user) return <RecoveryScreen />
   return user ? <HomeScreen /> : <AuthScreen />
 }
 
@@ -534,6 +641,7 @@ const styles = StyleSheet.create({
   buttonSecondaryText: { color: '#101418' },
   link: { color: '#356AE6', fontWeight: '700' },
   linkMuted: { color: '#66727C', fontWeight: '700', marginTop: 2 },
+  recoveryHelp: { color: '#66727C', lineHeight: 20 },
   inviteCard: { backgroundColor: '#E7F0FF', padding: 22, borderRadius: 22, gap: 8 },
   inviteLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#4B658E' },
   inviteCode: { fontSize: 36, fontWeight: '900', letterSpacing: 5, color: '#163E84' },
