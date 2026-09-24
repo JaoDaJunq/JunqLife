@@ -9,5 +9,5 @@ export type CircleMapProps = {
   places?: Place[]
   draftCoordinate?: [number, number] | null
   onMemberPress?: (userId: string) => void
-  onMapPress?: (coordinate: [number, number]) => void
+  onMapLongPress?: (coordinate: [number, number]) => void
 }

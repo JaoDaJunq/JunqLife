@@ -267,8 +267,7 @@ export default function CircleMapScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.page}>
-        <View style={styles.header}>
+      <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
@@ -281,8 +280,9 @@ export default function CircleMapScreen() {
           <Pressable onPress={refresh}>
             <Text style={styles.link}>Atualizar</Text>
           </Pressable>
-        </View>
+      </View>
 
+      <View style={styles.mapShell}>
         <CircleMap
           members={state.members}
           currentUserId={user.id}
@@ -291,9 +291,15 @@ export default function CircleMapScreen() {
           places={places}
           draftCoordinate={isOwner ? placeDraft : null}
           onMemberPress={setSelectedUserId}
-          onMapPress={isOwner ? setPlaceDraft : undefined}
+          onMapLongPress={isOwner ? setPlaceDraft : undefined}
         />
+      </View>
 
+      <ScrollView
+        style={styles.detailsScroll}
+        contentContainerStyle={styles.detailsPage}
+        keyboardShouldPersistTaps="handled"
+      >
         {selectedMember && (
           <View style={styles.selectedCard}>
             <View style={styles.memberHeader}>
@@ -374,7 +380,7 @@ export default function CircleMapScreen() {
                 <Text style={styles.placeHelp}>
                   {placeDraft
                     ? 'Ponto escolhido diretamente no mapa.'
-                    : 'Usando a posição do membro selecionado. Toque no mapa para escolher outro ponto.'}
+                    : 'Usando a posição do membro selecionado. Segure no mapa para escolher outro ponto.'}
                 </Text>
               </View>
               {placeDraft && (
@@ -419,7 +425,7 @@ export default function CircleMapScreen() {
             <Text style={styles.emptyPlaceTitle}>Nenhum local salvo</Text>
             <Text style={styles.emptyPlaceText}>
               {isOwner
-                ? 'Toque no mapa para escolher onde criar o primeiro local.'
+                ? 'Segure no mapa para escolher onde criar o primeiro local.'
                 : 'O owner do círculo ainda não cadastrou nenhum local.'}
             </Text>
           </View>
@@ -491,8 +497,10 @@ export default function CircleMapScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F4F6F8' },
   center: { alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  page: { padding: 18, paddingBottom: 50, gap: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 12, paddingBottom: 12 },
+  mapShell: { paddingHorizontal: 18, paddingBottom: 12 },
+  detailsScroll: { flex: 1 },
+  detailsPage: { paddingHorizontal: 18, paddingTop: 4, paddingBottom: 50, gap: 16 },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   backText: { fontSize: 30, color: '#161C21', lineHeight: 32, marginTop: -2 },
   headerCopy: { flex: 1 },

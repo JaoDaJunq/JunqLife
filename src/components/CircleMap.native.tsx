@@ -7,6 +7,7 @@ import {
   Layer,
   Marker,
   type CameraRef,
+  type MapRef,
   type InitialViewState,
   type LngLatBounds,
 } from '@maplibre/maplibre-react-native'
@@ -98,9 +99,10 @@ export default function CircleMap({
   places = [],
   draftCoordinate = null,
   onMemberPress,
-  onMapPress,
+  onMapLongPress,
 }: CircleMapProps) {
   const cameraRef = useRef<CameraRef>(null)
+  const mapRef = useRef<MapRef>(null)
   const visibleMembers = useMemo(
     () => locationsForMap(members, currentUserId),
     [members, currentUserId],
@@ -136,6 +138,24 @@ export default function CircleMap({
     }
   }, [visibleMembers, places, fallbackPoint])
 
+  const zoomBy = async (delta: number) => {
+    const currentZoom = await mapRef.current?.getZoom().catch(() => undefined)
+    const nextZoom = Math.max(2, Math.min(19, (currentZoom ?? 15) + delta))
+    cameraRef.current?.zoomTo(nextZoom, { duration: 220, easing: 'ease' })
+  }
+
+  const focusSelf = () => {
+    const self = visibleMembers.find((member) => member.userId === currentUserId)
+    if (!self?.location) return
+
+    cameraRef.current?.easeTo({
+      center: [self.location.longitude, self.location.latitude],
+      zoom: 16.5,
+      duration: 450,
+      easing: 'ease',
+    })
+  }
+
   const fitEveryone = () => {
     const bounds = boundsFor(visibleMembers, places)
     if (bounds) {
@@ -159,15 +179,27 @@ export default function CircleMap({
   return (
     <View style={styles.container}>
       <Map
+        ref={mapRef}
         style={styles.map}
         mapStyle={MAP_STYLE}
-        onPress={(event) => {
-          if (!onMapPress) return
+        dragPan
+        touchZoom
+        doubleTapZoom
+        doubleTapHoldZoom
+        touchRotate
+        touchPitch
+        compass
+        compassHiddenFacingNorth
+        compassPosition={{ top: 62, right: 14 }}
+        scaleBar={false}
+        preferredFramesPerSecond={60}
+        onLongPress={(event) => {
+          if (!onMapLongPress) return
           const [longitude, latitude] = event.nativeEvent.lngLat
-          onMapPress([longitude, latitude])
+          onMapLongPress([longitude, latitude])
         }}
       >
-        <Camera ref={cameraRef} initialViewState={initialViewState} maxZoom={18} />
+        <Camera ref={cameraRef} initialViewState={initialViewState} minZoom={2} maxZoom={19} />
 
         {places.map((place) => (
           <GeoJSONSource
@@ -273,8 +305,29 @@ export default function CircleMap({
       </Map>
 
       <Pressable style={styles.fitButton} onPress={fitEveryone}>
-        <Text style={styles.fitButtonText}>Enquadrar</Text>
+        <Text style={styles.fitButtonText}>Grupo</Text>
       </Pressable>
+
+      <View style={styles.zoomControls}>
+        <Pressable style={styles.mapControl} onPress={() => void zoomBy(1)}>
+          <Text style={styles.mapControlText}>+</Text>
+        </Pressable>
+        <View style={styles.controlDivider} />
+        <Pressable style={styles.mapControl} onPress={() => void zoomBy(-1)}>
+          <Text style={styles.mapControlText}>−</Text>
+        </Pressable>
+      </View>
+
+      <Pressable style={styles.selfButton} onPress={focusSelf}>
+        <Text style={styles.selfButtonIcon}>◎</Text>
+        <Text style={styles.selfButtonText}>Você</Text>
+      </Pressable>
+
+      {onMapLongPress && !draftCoordinate && (
+        <View pointerEvents="none" style={styles.longPressHint}>
+          <Text style={styles.longPressHintText}>Segure no mapa para marcar um local</Text>
+        </View>
+      )}
 
       {visibleMembers.length === 0 && places.length === 0 && !draftCoordinate && (
         <View style={styles.emptyOverlay}>
@@ -288,7 +341,7 @@ export default function CircleMap({
 
 const styles = StyleSheet.create({
   container: {
-    height: 430,
+    height: 400,
     overflow: 'hidden',
     borderRadius: 24,
     backgroundColor: '#E7EBEF',
@@ -352,6 +405,49 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   fitButtonText: { color: '#101418', fontWeight: '800', fontSize: 13 },
+  zoomControls: {
+    position: 'absolute',
+    right: 14,
+    bottom: 76,
+    width: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    overflow: 'hidden',
+  },
+  mapControl: {
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapControlText: { color: '#101418', fontWeight: '700', fontSize: 27, lineHeight: 29 },
+  controlDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#D8DDE1' },
+  selfButton: {
+    position: 'absolute',
+    right: 14,
+    bottom: 16,
+    height: 46,
+    minWidth: 78,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  selfButtonIcon: { color: '#356AE6', fontSize: 20, fontWeight: '900' },
+  selfButtonText: { color: '#101418', fontWeight: '800', fontSize: 12 },
+  longPressHint: {
+    position: 'absolute',
+    left: 14,
+    bottom: 16,
+    maxWidth: 220,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: 'rgba(16,20,24,0.82)',
+  },
+  longPressHintText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
   emptyOverlay: {
     position: 'absolute',
     left: 18,
