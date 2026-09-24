@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   Camera,
   Map,
+  GeoJSONSource,
+  Layer,
   Marker,
   type CameraRef,
   type InitialViewState,
@@ -54,6 +56,7 @@ export default function CircleMap({
   members,
   currentUserId,
   selectedUserId,
+  routeCoordinates = [],
   onMemberPress,
 }: CircleMapProps) {
   const cameraRef = useRef<CameraRef>(null)
@@ -110,6 +113,30 @@ export default function CircleMap({
     <View style={styles.container}>
       <Map style={styles.map} mapStyle={MAP_STYLE}>
         <Camera ref={cameraRef} initialViewState={initialViewState} maxZoom={18} />
+
+        {routeCoordinates.length >= 2 && (
+          <GeoJSONSource
+            id="selected-history-route"
+            data={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: routeCoordinates,
+              },
+            }}
+          >
+            <Layer
+              id="selected-history-route-line"
+              type="line"
+              paint={{
+                'line-color': '#356AE6',
+                'line-width': 4,
+                'line-opacity': 0.8,
+              }}
+            />
+          </GeoJSONSource>
+        )}
 
         {visibleMembers.map((member) => {
           const location = member.location!
