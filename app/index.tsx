@@ -22,6 +22,13 @@ import {
   type Circle,
 } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
+import {
+  TRACKING_SUPPORTED,
+  sendPositionNow,
+  startTracking,
+  stopTracking,
+  trackingIsActive,
+} from '@/src/lib/tracking'
 
 function Button({
   title,
@@ -143,6 +150,8 @@ function HomeScreen() {
   const [busy, setBusy] = useState(false)
   const [sharing, setSharingState] = useState<Record<string, boolean>>({})
   const [generatedCode, setGeneratedCode] = useState<string | null>(null)
+  const [trackingActive, setTrackingActive] = useState(false)
+  const [trackingBusy, setTrackingBusy] = useState(false)
 
   const displayName = useMemo(
     () => String(user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Você'),
@@ -165,6 +174,9 @@ function HomeScreen() {
 
   useEffect(() => {
     refresh()
+    if (TRACKING_SUPPORTED) {
+      trackingIsActive().then(setTrackingActive).catch(() => setTrackingActive(false))
+    }
   }, [refresh])
 
   const handleCreate = async () => {
@@ -199,12 +211,74 @@ function HomeScreen() {
   const toggleSharing = async (circleId: string, value: boolean) => {
     if (!user) return
     const previous = sharing[circleId]
-    setSharingState((current) => ({ ...current, [circleId]: value }))
+    const nextSharing = { ...sharing, [circleId]: value }
+    setSharingState(nextSharing)
+
     try {
       await setSharing(circleId, user.id, value)
+
+      if (!Object.values(nextSharing).some(Boolean) && trackingActive) {
+        await stopTracking()
+        setTrackingActive(false)
+      }
     } catch (error) {
       setSharingState((current) => ({ ...current, [circleId]: previous }))
       Alert.alert('Não foi possível alterar', error instanceof Error ? error.message : 'Tente novamente.')
+    }
+  }
+
+  const handleTracking = async () => {
+    if (!TRACKING_SUPPORTED || trackingBusy) return
+
+    if (!Object.values(sharing).some(Boolean) && !trackingActive) {
+      Alert.alert('Compartilhamento desligado', 'Ative a localização em pelo menos um círculo antes de iniciar o rastreamento.')
+      return
+    }
+
+    setTrackingBusy(true)
+    try {
+      if (trackingActive) {
+        await stopTracking()
+        setTrackingActive(false)
+      } else {
+        await startTracking()
+        setTrackingActive(true)
+      }
+    } catch (error) {
+      Alert.alert(
+        'Não foi possível alterar o rastreamento',
+        error instanceof Error ? error.message : 'Confira as permissões de localização do aparelho.',
+      )
+    } finally {
+      setTrackingBusy(false)
+    }
+  }
+
+  const handlePositionNow = async () => {
+    if (!TRACKING_SUPPORTED || trackingBusy) return
+    if (!Object.values(sharing).some(Boolean)) {
+      Alert.alert('Compartilhamento desligado', 'Ative a localização em pelo menos um círculo primeiro.')
+      return
+    }
+
+    setTrackingBusy(true)
+    try {
+      const sent = await sendPositionNow()
+      Alert.alert(sent ? 'Posição enviada' : 'Não foi possível enviar', sent ? 'O ponto atual foi enviado ao JunqLife.' : 'Confira sinal GPS, internet e permissões.')
+    } catch (error) {
+      Alert.alert('Erro no GPS', error instanceof Error ? error.message : 'Confira as permissões do aparelho.')
+    } finally {
+      setTrackingBusy(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    try {
+      if (TRACKING_SUPPORTED && trackingActive) {
+        await stopTracking()
+      }
+    } finally {
+      await supabase.auth.signOut()
     }
   }
 
@@ -228,7 +302,7 @@ function HomeScreen() {
             <Text style={styles.eyebrow}>JUNQLIFE</Text>
             <Text style={styles.heading}>Buenas, {displayName}.</Text>
           </View>
-          <Pressable onPress={() => supabase.auth.signOut()}>
+          <Pressable onPress={handleSignOut}>
             <Text style={styles.link}>Sair</Text>
           </Pressable>
         </View>
@@ -236,6 +310,34 @@ function HomeScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>Seu círculo começa aqui.</Text>
           <Text style={styles.heroText}>Crie um grupo ou entre com o código de alguém. Localização continua desligada até você permitir.</Text>
+        </View>
+
+        <View style={styles.trackingCard}>
+          <View style={styles.circleTop}>
+            <View style={styles.flex}>
+              <Text style={styles.cardTitle}>Rastreamento deste aparelho</Text>
+              <Text style={styles.trackingDescription}>
+                {TRACKING_SUPPORTED
+                  ? trackingActive
+                    ? 'Ativo em segundo plano. Só os círculos autorizados conseguem ver sua posição.'
+                    : 'Desligado. O GPS não é enviado pelo JunqLife.'
+                  : 'Disponível no app Android/iOS usando Development Build.'}
+              </Text>
+            </View>
+            <View style={[styles.statusDot, trackingActive && styles.statusDotActive]} />
+          </View>
+
+          <Button
+            title={trackingBusy ? 'Processando...' : trackingActive ? 'Parar rastreamento' : 'Iniciar rastreamento'}
+            onPress={handleTracking}
+            disabled={!TRACKING_SUPPORTED || trackingBusy}
+          />
+          <Button
+            title="Enviar posição agora"
+            onPress={handlePositionNow}
+            secondary
+            disabled={!TRACKING_SUPPORTED || trackingBusy}
+          />
         </View>
 
         <View style={styles.card}>
@@ -347,6 +449,10 @@ const styles = StyleSheet.create({
   heroTitle: { color: 'white', fontSize: 26, fontWeight: '800' },
   heroText: { color: '#C5CDD5', lineHeight: 21 },
   card: { backgroundColor: 'white', padding: 20, borderRadius: 22, gap: 12 },
+  trackingCard: { backgroundColor: '#E8F7EE', padding: 20, borderRadius: 22, gap: 12 },
+  trackingDescription: { color: '#587064', lineHeight: 19, marginTop: 4 },
+  statusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#AAB5AF' },
+  statusDotActive: { backgroundColor: '#18A558' },
   cardTitle: { fontSize: 19, fontWeight: '800', color: '#151A1F' },
   input: { backgroundColor: '#F2F4F6', borderRadius: 14, paddingHorizontal: 15, paddingVertical: 14, fontSize: 16, color: '#101418' },
   codeInput: { letterSpacing: 3, fontWeight: '800', textAlign: 'center' },
