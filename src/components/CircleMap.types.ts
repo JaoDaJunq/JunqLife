@@ -7,5 +7,7 @@ export type CircleMapProps = {
   selectedUserId?: string | null
   routeCoordinates?: Array<[number, number]>
   places?: Place[]
+  draftCoordinate?: [number, number] | null
   onMemberPress?: (userId: string) => void
+  onMapPress?: (coordinate: [number, number]) => void
 }
