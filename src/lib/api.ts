@@ -266,3 +266,24 @@ export async function updateMyProfile(userId: string, displayName: string) {
   if (error) throw error
   return data as Profile
 }
+
+
+export async function transferCircleOwnership(circleId: string, newOwnerId: string) {
+  const { data, error } = await supabase.functions.invoke('circle-owner-transfer', {
+    body: {
+      circle_id: circleId,
+      new_owner_id: newOwnerId,
+    },
+  })
+
+  if (error) throw error
+  if (!data?.circle_id || !data?.old_owner_id || !data?.new_owner_id) {
+    throw new Error('Não foi possível transferir a propriedade deste círculo.')
+  }
+
+  return {
+    circleId: String(data.circle_id),
+    oldOwnerId: String(data.old_owner_id),
+    newOwnerId: String(data.new_owner_id),
+  }
+}
