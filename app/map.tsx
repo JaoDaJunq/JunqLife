@@ -8,6 +8,7 @@ import {
   type CircleMapLocation,
   type CircleMapState,
 } from '@/src/lib/mapData'
+import { loadTodayHistory, type HistorySummary } from '@/src/lib/history'
 import { supabase } from '@/src/lib/supabase'
 import { useAuth } from '@/src/context/AuthProvider'
 
@@ -35,6 +36,8 @@ export default function CircleMapScreen() {
   const [loading, setLoading] = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
+  const [history, setHistory] = useState<HistorySummary | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!circleId) return
@@ -122,9 +125,39 @@ export default function CircleMapScreen() {
     }
   }, [circleId])
 
+  useEffect(() => {
+    if (!circleId || !selectedUserId) {
+      setHistory(null)
+      return
+    }
+
+    let cancelled = false
+    setHistoryLoading(true)
+
+    loadTodayHistory(circleId, selectedUserId)
+      .then((next) => {
+        if (!cancelled) setHistory(next)
+      })
+      .catch(() => {
+        if (!cancelled) setHistory(null)
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [circleId, selectedUserId])
+
   const selectedMember = useMemo(
     () => state?.members.find((member) => member.userId === selectedUserId) ?? null,
     [state, selectedUserId],
+  )
+
+  const routeCoordinates = useMemo(
+    () => history?.points.map((point) => [point.longitude, point.latitude] as [number, number]) ?? [],
+    [history],
   )
 
   if (!circleId) {
@@ -175,6 +208,7 @@ export default function CircleMapScreen() {
           members={state.members}
           currentUserId={user.id}
           selectedUserId={selectedUserId}
+          routeCoordinates={routeCoordinates}
           onMemberPress={setSelectedUserId}
         />
 
@@ -197,6 +231,25 @@ export default function CircleMapScreen() {
                 </Text>
               </View>
             </View>
+
+            {historyLoading ? (
+              <Text style={styles.pausedText}>Carregando histórico de hoje...</Text>
+            ) : history && history.points.length > 0 ? (
+              <View style={styles.historyRow}>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>HOJE</Text>
+                  <Text style={styles.statValue}>{history.points.length} pontos</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>DISTÂNCIA</Text>
+                  <Text style={styles.statValue}>{history.distanceKm.toFixed(1)} km</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>ROTA</Text>
+                  <Text style={styles.statValue}>{history.points.length >= 2 ? 'No mapa' : '1 ponto'}</Text>
+                </View>
+              </View>
+            ) : null}
 
             {selectedMember.location && (selectedMember.userId === user.id || selectedMember.sharingEnabled) ? (
               <View style={styles.statRow}>
@@ -298,6 +351,7 @@ const styles = StyleSheet.create({
   selectedName: { fontSize: 19, fontWeight: '900', color: '#171D22' },
   selectedStatus: { color: '#68737D', marginTop: 3 },
   statRow: { flexDirection: 'row', gap: 8 },
+  historyRow: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, backgroundColor: '#F3F5F7', borderRadius: 14, padding: 12 },
   statLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.7, color: '#7C8790' },
   statValue: { fontSize: 15, fontWeight: '800', color: '#20272D', marginTop: 4 },
