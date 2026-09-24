@@ -79,3 +79,68 @@ export async function getSharing(circleId: string, userId: string) {
   if (error) throw error
   return Boolean(data.sharing_enabled)
 }
+
+
+export type Place = {
+  id: string
+  circle_id: string
+  name: string
+  latitude: number
+  longitude: number
+  radius_m: number
+  created_by: string
+  created_at: string
+}
+
+export async function listPlaces(circleId: string) {
+  const { data, error } = await supabase
+    .from('places')
+    .select('id,circle_id,name,latitude,longitude,radius_m,created_by,created_at')
+    .eq('circle_id', circleId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return (data ?? []) as Place[]
+}
+
+export async function createPlace(input: {
+  circleId: string
+  name: string
+  latitude: number
+  longitude: number
+  radiusM: number
+  userId: string
+}) {
+  const cleanName = input.name.trim()
+  if (!cleanName) throw new Error('Dê um nome para o local.')
+
+  const radiusM = Math.round(input.radiusM)
+  if (!Number.isFinite(radiusM) || radiusM < 25 || radiusM > 5000) {
+    throw new Error('O raio precisa ficar entre 25 e 5000 metros.')
+  }
+
+  const { data, error } = await supabase
+    .from('places')
+    .insert({
+      circle_id: input.circleId,
+      name: cleanName,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      radius_m: radiusM,
+      created_by: input.userId,
+    })
+    .select('id,circle_id,name,latitude,longitude,radius_m,created_by,created_at')
+    .single()
+
+  if (error) throw error
+  return data as Place
+}
+
+export async function deletePlace(placeId: string) {
+  const { error } = await supabase
+    .from('places')
+    .delete()
+    .eq('id', placeId)
+
+  if (error) throw error
+}

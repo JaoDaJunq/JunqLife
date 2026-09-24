@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import CircleMap from '@/src/components/CircleMap'
@@ -11,6 +11,7 @@ import {
 import { loadTodayHistory, type HistorySummary } from '@/src/lib/history'
 import { supabase } from '@/src/lib/supabase'
 import { useAuth } from '@/src/context/AuthProvider'
+import { createPlace, deletePlace, listPlaces, type Place } from '@/src/lib/api'
 
 function relativeTime(value: string, now: number) {
   const diffSeconds = Math.max(0, Math.floor((now - new Date(value).getTime()) / 1000))
@@ -38,12 +39,20 @@ export default function CircleMapScreen() {
   const [now, setNow] = useState(Date.now())
   const [history, setHistory] = useState<HistorySummary | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [places, setPlaces] = useState<Place[]>([])
+  const [placeName, setPlaceName] = useState('')
+  const [placeRadius, setPlaceRadius] = useState('100')
+  const [placeBusy, setPlaceBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!circleId) return
     try {
-      const next = await loadCircleMap(circleId)
+      const [next, nextPlaces] = await Promise.all([
+        loadCircleMap(circleId),
+        listPlaces(circleId),
+      ])
       setState(next)
+      setPlaces(nextPlaces)
       setSelectedUserId((current) => current ?? user?.id ?? next.members[0]?.userId ?? null)
     } catch (error) {
       Alert.alert('Não foi possível abrir o mapa', error instanceof Error ? error.message : 'Tente novamente.')
@@ -155,6 +164,68 @@ export default function CircleMapScreen() {
     [state, selectedUserId],
   )
 
+  const isOwner = Boolean(user && state?.circle.owner_id === user.id)
+
+  const selectedLocation = useMemo(() => {
+    if (!selectedMember?.location) return null
+    if (selectedMember.userId === user?.id || selectedMember.sharingEnabled) {
+      return selectedMember.location
+    }
+    return null
+  }, [selectedMember, user?.id])
+
+  const handleCreatePlace = async () => {
+    if (!circleId || !user || !selectedLocation || placeBusy) return
+
+    const radiusM = Number(placeRadius.replace(',', '.'))
+    setPlaceBusy(true)
+    try {
+      const place = await createPlace({
+        circleId,
+        name: placeName,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        radiusM,
+        userId: user.id,
+      })
+      setPlaces((current) => [...current, place])
+      setPlaceName('')
+      setPlaceRadius('100')
+      Alert.alert('Local salvo', `${place.name} agora aparece no mapa deste círculo.`)
+    } catch (error) {
+      Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.')
+    } finally {
+      setPlaceBusy(false)
+    }
+  }
+
+  const handleDeletePlace = async (place: Place) => {
+    if (placeBusy) return
+
+    Alert.alert(
+      'Excluir local?',
+      `Remover “${place.name}” deste círculo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setPlaceBusy(true)
+            try {
+              await deletePlace(place.id)
+              setPlaces((current) => current.filter((item) => item.id !== place.id))
+            } catch (error) {
+              Alert.alert('Não foi possível excluir', error instanceof Error ? error.message : 'Tente novamente.')
+            } finally {
+              setPlaceBusy(false)
+            }
+          },
+        },
+      ],
+    )
+  }
+
   const routeCoordinates = useMemo(
     () => history?.points.map((point) => [point.longitude, point.latitude] as [number, number]) ?? [],
     [history],
@@ -209,6 +280,7 @@ export default function CircleMapScreen() {
           currentUserId={user.id}
           selectedUserId={selectedUserId}
           routeCoordinates={routeCoordinates}
+          places={places}
           onMemberPress={setSelectedUserId}
         />
 
@@ -284,6 +356,69 @@ export default function CircleMapScreen() {
           </View>
         )}
 
+        {isOwner && selectedLocation && (
+          <View style={styles.placeCreateCard}>
+            <Text style={styles.cardTitle}>Salvar local desta posição</Text>
+            <Text style={styles.placeHelp}>
+              Usa a posição atualmente selecionada como centro da geofence.
+            </Text>
+            <TextInput
+              value={placeName}
+              onChangeText={setPlaceName}
+              placeholder="Ex.: Casa, Trabalho, Academia"
+              style={styles.input}
+              maxLength={100}
+            />
+            <TextInput
+              value={placeRadius}
+              onChangeText={setPlaceRadius}
+              placeholder="Raio em metros"
+              keyboardType="numeric"
+              style={styles.input}
+            />
+            <Pressable
+              onPress={handleCreatePlace}
+              disabled={placeBusy}
+              style={[styles.primaryButton, placeBusy && styles.buttonDisabled]}
+            >
+              <Text style={styles.primaryButtonText}>
+                {placeBusy ? 'Salvando...' : 'Salvar local'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Locais salvos</Text>
+          <Text style={styles.memberCount}>{places.length}</Text>
+        </View>
+
+        {places.length === 0 ? (
+          <View style={styles.emptyPlaceCard}>
+            <Text style={styles.emptyPlaceTitle}>Nenhum local salvo</Text>
+            <Text style={styles.emptyPlaceText}>
+              {isOwner
+                ? 'Selecione uma posição no mapa para criar o primeiro local.'
+                : 'O owner do círculo ainda não cadastrou nenhum local.'}
+            </Text>
+          </View>
+        ) : (
+          places.map((place) => (
+            <View key={place.id} style={styles.placeCard}>
+              <View style={styles.placeIcon}><Text style={styles.placeIconText}>⌂</Text></View>
+              <View style={styles.flex}>
+                <Text style={styles.placeName}>{place.name}</Text>
+                <Text style={styles.placeMeta}>Raio de {place.radius_m} m</Text>
+              </View>
+              {isOwner && (
+                <Pressable onPress={() => handleDeletePlace(place)} disabled={placeBusy}>
+                  <Text style={styles.deleteLink}>Excluir</Text>
+                </Pressable>
+              )}
+            </View>
+          ))
+        )}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Membros</Text>
           <Text style={styles.memberCount}>{state.members.length}</Text>
@@ -345,6 +480,22 @@ const styles = StyleSheet.create({
   link: { color: '#356AE6', fontWeight: '800' },
   errorTitle: { fontSize: 18, fontWeight: '800', color: '#1B2228' },
   selectedCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 18, gap: 16 },
+  placeCreateCard: { backgroundColor: '#F0ECFF', borderRadius: 22, padding: 18, gap: 12 },
+  cardTitle: { fontSize: 18, fontWeight: '900', color: '#171D22' },
+  placeHelp: { color: '#665D82', lineHeight: 19 },
+  input: { backgroundColor: '#FFFFFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: '#161C21' },
+  primaryButton: { backgroundColor: '#101418', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '900' },
+  buttonDisabled: { opacity: 0.5 },
+  emptyPlaceCard: { backgroundColor: '#E9EDF0', borderRadius: 18, padding: 16 },
+  emptyPlaceTitle: { color: '#303941', fontWeight: '900' },
+  emptyPlaceText: { color: '#6C7780', marginTop: 4, lineHeight: 18 },
+  placeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', padding: 14, borderRadius: 18 },
+  placeIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#7C5CFC', alignItems: 'center', justifyContent: 'center' },
+  placeIconText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  placeName: { color: '#1C2329', fontWeight: '900' },
+  placeMeta: { color: '#7A858E', fontSize: 13, marginTop: 2 },
+  deleteLink: { color: '#C0392B', fontWeight: '800' },
   memberHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#101418', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },

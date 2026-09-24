@@ -29,11 +29,25 @@ function locationsForMap(members: CircleMapProps['members'], currentUserId: stri
   )
 }
 
-function boundsFor(members: ReturnType<typeof locationsForMap>): LngLatBounds | null {
-  if (members.length < 2) return null
+function boundsFor(
+  members: ReturnType<typeof locationsForMap>,
+  places: CircleMapProps['places'] = [],
+): LngLatBounds | null {
+  const points = [
+    ...members.map((member) => ({
+      longitude: member.location!.longitude,
+      latitude: member.location!.latitude,
+    })),
+    ...places.map((place) => ({
+      longitude: place.longitude,
+      latitude: place.latitude,
+    })),
+  ]
 
-  const longitudes = members.map((member) => member.location!.longitude)
-  const latitudes = members.map((member) => member.location!.latitude)
+  if (points.length < 2) return null
+
+  const longitudes = points.map((point) => point.longitude)
+  const latitudes = points.map((point) => point.latitude)
 
   let west = Math.min(...longitudes)
   let east = Math.max(...longitudes)
@@ -52,11 +66,36 @@ function boundsFor(members: ReturnType<typeof locationsForMap>): LngLatBounds | 
   return [west, south, east, north]
 }
 
+function placeCircle(longitude: number, latitude: number, radiusM: number) {
+  const points: Array<[number, number]> = []
+  const latRadians = (latitude * Math.PI) / 180
+  const metersPerDegreeLat = 111_320
+  const metersPerDegreeLon = Math.max(1, 111_320 * Math.cos(latRadians))
+
+  for (let index = 0; index <= 48; index += 1) {
+    const angle = (index / 48) * Math.PI * 2
+    points.push([
+      longitude + (Math.cos(angle) * radiusM) / metersPerDegreeLon,
+      latitude + (Math.sin(angle) * radiusM) / metersPerDegreeLat,
+    ])
+  }
+
+  return {
+    type: 'Feature' as const,
+    properties: {},
+    geometry: {
+      type: 'Polygon' as const,
+      coordinates: [points],
+    },
+  }
+}
+
 export default function CircleMap({
   members,
   currentUserId,
   selectedUserId,
   routeCoordinates = [],
+  places = [],
   onMemberPress,
 }: CircleMapProps) {
   const cameraRef = useRef<CameraRef>(null)
@@ -66,7 +105,7 @@ export default function CircleMap({
   )
 
   const initialViewState = useMemo<InitialViewState>(() => {
-    const bounds = boundsFor(visibleMembers)
+    const bounds = boundsFor(visibleMembers, places)
     if (bounds) {
       return {
         bounds,
@@ -89,7 +128,7 @@ export default function CircleMap({
   }, [visibleMembers])
 
   const fitEveryone = () => {
-    const bounds = boundsFor(visibleMembers)
+    const bounds = boundsFor(visibleMembers, places)
     if (bounds) {
       cameraRef.current?.fitBounds(bounds, {
         padding: { top: 80, right: 50, bottom: 80, left: 50 },
@@ -113,6 +152,45 @@ export default function CircleMap({
     <View style={styles.container}>
       <Map style={styles.map} mapStyle={MAP_STYLE}>
         <Camera ref={cameraRef} initialViewState={initialViewState} maxZoom={18} />
+
+        {places.map((place) => (
+          <GeoJSONSource
+            key={`place-radius-${place.id}`}
+            id={`place-radius-${place.id}`}
+            data={placeCircle(place.longitude, place.latitude, place.radius_m)}
+          >
+            <Layer
+              id={`place-radius-fill-${place.id}`}
+              type="fill"
+              paint={{
+                'fill-color': '#7C5CFC',
+                'fill-opacity': 0.12,
+              }}
+            />
+            <Layer
+              id={`place-radius-line-${place.id}`}
+              type="line"
+              paint={{
+                'line-color': '#7C5CFC',
+                'line-width': 2,
+                'line-opacity': 0.7,
+              }}
+            />
+          </GeoJSONSource>
+        ))}
+
+        {places.map((place) => (
+          <Marker
+            key={`place-marker-${place.id}`}
+            id={`place-${place.id}`}
+            lngLat={[place.longitude, place.latitude]}
+            anchor="center"
+          >
+            <View style={styles.placeMarker}>
+              <Text style={styles.placeMarkerText}>⌂</Text>
+            </View>
+          </Marker>
+        ))}
 
         {routeCoordinates.length >= 2 && (
           <GeoJSONSource
@@ -203,6 +281,17 @@ const styles = StyleSheet.create({
   markerSelf: { backgroundColor: '#356AE6' },
   markerSelected: { transform: [{ scale: 1.16 }] },
   markerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
+  placeMarker: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#7C5CFC',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeMarkerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 17 },
   markerPointer: {
     width: 0,
     height: 0,
