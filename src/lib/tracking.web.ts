@@ -36,3 +36,8 @@ export async function getStoredDeviceId() {
 export async function clearTrackingLogs() {
   return
 }
+
+
+export async function clearTrackingCredential() {
+  return
+}

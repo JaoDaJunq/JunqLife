@@ -7,6 +7,7 @@ export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_iYciJ-2Hmb3dSjvBuwosyw_8
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
+    storageKey: 'junqlife.auth.session.v2',
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

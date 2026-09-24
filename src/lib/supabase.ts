@@ -21,6 +21,7 @@ const browserStorage = {
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: browserStorage,
+    storageKey: 'junqlife.auth.session.v2',
     autoRefreshToken: typeof window !== 'undefined',
     persistSession: true,
     detectSessionInUrl: typeof window !== 'undefined',
