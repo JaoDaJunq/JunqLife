@@ -80,6 +80,7 @@ function AuthScreen() {
   const [busy, setBusy] = useState(false)
   const [resending, setResending] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const submit = async () => {
     if (!email.trim() || password.length < 6 || (mode === 'signup' && !name.trim())) {
@@ -198,13 +199,32 @@ function AuthScreen() {
             autoCapitalize="none"
             style={styles.input}
           />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Senha"
-            secureTextEntry
-            style={styles.input}
-          />
+          <View style={styles.passwordWrap}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Senha"
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={submit}
+              style={[styles.input, styles.passwordInput]}
+            />
+            <Pressable
+              onPress={() => setShowPassword((current) => !current)}
+              style={styles.passwordToggle}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              <Text style={styles.passwordToggleText}>
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </Text>
+            </Pressable>
+          </View>
 
           <Button title={busy ? 'Carregando...' : mode === 'login' ? 'Entrar' : 'Criar conta'} onPress={submit} disabled={busy} />
 
@@ -286,6 +306,11 @@ function RecoveryScreen() {
             onChangeText={setPassword}
             placeholder="Nova senha"
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="new-password"
+            textContentType="newPassword"
             style={styles.input}
           />
           <TextInput
@@ -293,6 +318,11 @@ function RecoveryScreen() {
             onChangeText={setConfirmPassword}
             placeholder="Confirmar nova senha"
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="new-password"
+            textContentType="newPassword"
             style={styles.input}
           />
 
@@ -633,6 +663,10 @@ const styles = StyleSheet.create({
   statusDotActive: { backgroundColor: '#18A558' },
   cardTitle: { fontSize: 19, fontWeight: '800', color: '#151A1F' },
   input: { backgroundColor: '#F2F4F6', borderRadius: 14, paddingHorizontal: 15, paddingVertical: 14, fontSize: 16, color: '#101418' },
+  passwordWrap: { position: 'relative', justifyContent: 'center' },
+  passwordInput: { paddingRight: 82 },
+  passwordToggle: { position: 'absolute', right: 14, paddingVertical: 10, paddingHorizontal: 2 },
+  passwordToggleText: { color: '#356AE6', fontWeight: '800', fontSize: 13 },
   codeInput: { letterSpacing: 3, fontWeight: '800', textAlign: 'center' },
   button: { backgroundColor: '#101418', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   buttonSecondary: { backgroundColor: '#E8ECEF' },
