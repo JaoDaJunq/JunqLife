@@ -42,7 +42,7 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.3.21",
+            "kotlinVersion": "2.3.20",
             "buildArchs": [
               "arm64-v8a"
             ]
