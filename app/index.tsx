@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'expo-router'
 import {
   ActivityIndicator,
   Alert,
@@ -144,6 +145,7 @@ function AuthScreen() {
 
 function HomeScreen() {
   const { user } = useAuth()
+  const router = useRouter()
   const [circles, setCircles] = useState<Circle[]>([])
   const [newCircle, setNewCircle] = useState('')
   const [inviteCode, setInviteCode] = useState('')
@@ -403,6 +405,12 @@ function HomeScreen() {
                     </Pressable>
                   )}
                 </View>
+
+                <Button
+                  title="Abrir mapa ao vivo"
+                  onPress={() => router.push({ pathname: '/map', params: { circleId: circle.id } })}
+                  secondary
+                />
 
                 <View style={styles.sharingRow}>
                   <View style={styles.flex}>
