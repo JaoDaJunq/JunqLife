@@ -398,6 +398,11 @@ function HomeScreen() {
             secondary
             disabled={!TRACKING_SUPPORTED || trackingBusy}
           />
+          <Button
+            title="Diagnóstico GPS"
+            onPress={() => router.push('/diagnostics')}
+            secondary
+          />
         </View>
 
         <View style={styles.card}>

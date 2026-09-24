@@ -2,7 +2,7 @@
   "expo": {
     "name": "JunqLife",
     "slug": "junqlife",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "scheme": "junqlife",
     "userInterfaceStyle": "automatic",
@@ -28,7 +28,7 @@
         "FOREGROUND_SERVICE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "output": "static"

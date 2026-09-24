@@ -27,3 +27,12 @@ export async function sendPositionNow() {
 export async function trackingLogs(): Promise<unknown[]> {
   return []
 }
+
+
+export async function getStoredDeviceId() {
+  return null
+}
+
+export async function clearTrackingLogs() {
+  return
+}

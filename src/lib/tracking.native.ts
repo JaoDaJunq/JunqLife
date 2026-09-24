@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 import {
+  clearLogs,
   getLogs,
   init,
   isTracking,
@@ -122,4 +123,14 @@ export async function sendPositionNow() {
 export async function trackingLogs(): Promise<LogEntry[]> {
   if (!TRACKING_SUPPORTED) return []
   return getLogs()
+}
+
+
+export async function getStoredDeviceId() {
+  return SecureStore.getItemAsync(DEVICE_ID_KEY)
+}
+
+export async function clearTrackingLogs() {
+  if (!TRACKING_SUPPORTED) return
+  await clearLogs()
 }
