@@ -227,3 +227,42 @@ export async function setCircleMemberRole(
     role: data.role as Extract<CircleMemberRole, 'admin' | 'member'>,
   }
 }
+
+
+export type Profile = {
+  id: string
+  display_name: string
+  avatar_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function getMyProfile(userId: string) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id,display_name,avatar_path,created_at,updated_at')
+    .eq('id', userId)
+    .single()
+
+  if (error) throw error
+  return data as Profile
+}
+
+export async function updateMyProfile(userId: string, displayName: string) {
+  const cleanName = displayName.trim()
+  if (cleanName.length < 2) throw new Error('Use pelo menos 2 caracteres no nome.')
+  if (cleanName.length > 80) throw new Error('Use no máximo 80 caracteres no nome.')
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      display_name: cleanName,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select('id,display_name,avatar_path,created_at,updated_at')
+    .single()
+
+  if (error) throw error
+  return data as Profile
+}

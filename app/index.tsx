@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router'
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +14,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import WebPortal from '@/src/components/WebPortal'
 import { useAuth } from '@/src/context/AuthProvider'
 import {
   acceptInvite,
@@ -83,6 +86,7 @@ function authErrorMessage(error: unknown) {
 }
 
 function AuthScreen() {
+  const isWeb = Platform.OS === 'web'
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -185,7 +189,11 @@ function AuthScreen() {
       <ScrollView contentContainerStyle={styles.authPage} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
           <Text style={styles.brand}>JunqLife</Text>
-          <Text style={styles.subtitle}>Seu círculo, no mapa, com consentimento.</Text>
+          <Text style={styles.subtitle}>
+            {isWeb
+              ? 'Crie sua conta, gerencie seu acesso e baixe o aplicativo.'
+              : 'Entre com a conta criada na Central JunqLife.'}
+          </Text>
         </View>
 
         <View style={styles.card}>
@@ -238,26 +246,39 @@ function AuthScreen() {
 
           <Button title={busy ? 'Carregando...' : mode === 'login' ? 'Entrar' : 'Criar conta'} onPress={submit} disabled={busy} />
 
-          <Pressable onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-            <Text style={styles.link}>
-              {mode === 'login' ? 'Ainda não tem conta? Criar agora' : 'Já tem conta? Entrar'}
-            </Text>
-          </Pressable>
-
-          {mode === 'login' && (
+          {isWeb ? (
             <>
-              <Pressable onPress={sendPasswordReset} disabled={resetting || busy}>
-                <Text style={styles.linkMuted}>
-                  {resetting ? 'Enviando recuperação...' : 'Esqueceu a senha? Redefinir'}
+              <Pressable onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+                <Text style={styles.link}>
+                  {mode === 'login' ? 'Ainda não tem conta? Criar agora' : 'Já tem conta? Entrar'}
                 </Text>
               </Pressable>
 
-              <Pressable onPress={resendConfirmation} disabled={resending || busy}>
-                <Text style={styles.linkMuted}>
-                  {resending ? 'Reenviando confirmação...' : 'Não confirmou o e-mail? Reenviar confirmação'}
-                </Text>
-              </Pressable>
+              {mode === 'login' && (
+                <>
+                  <Pressable onPress={sendPasswordReset} disabled={resetting || busy}>
+                    <Text style={styles.linkMuted}>
+                      {resetting ? 'Enviando recuperação...' : 'Esqueceu a senha? Redefinir'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable onPress={resendConfirmation} disabled={resending || busy}>
+                    <Text style={styles.linkMuted}>
+                      {resending ? 'Reenviando confirmação...' : 'Não confirmou o e-mail? Reenviar confirmação'}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
             </>
+          ) : (
+            <View style={styles.centralAccess}>
+              <Text style={styles.centralAccessText}>
+                Cadastro, confirmação de e-mail e recuperação de senha ficam na Central JunqLife.
+              </Text>
+              <Pressable onPress={() => void Linking.openURL(WEB_APP_URL)}>
+                <Text style={styles.link}>Abrir Central JunqLife</Text>
+              </Pressable>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -654,6 +675,7 @@ export default function Index() {
   }
 
   if (recoveryMode && user) return <RecoveryScreen />
+  if (Platform.OS === 'web') return user ? <WebPortal /> : <AuthScreen />
   return user ? <HomeScreen /> : <AuthScreen />
 }
 
@@ -691,6 +713,8 @@ const styles = StyleSheet.create({
   link: { color: '#356AE6', fontWeight: '700' },
   linkMuted: { color: '#66727C', fontWeight: '700', marginTop: 2 },
   recoveryHelp: { color: '#66727C', lineHeight: 20 },
+  centralAccess: { backgroundColor: '#EEF3FF', borderRadius: 14, padding: 14, gap: 8 },
+  centralAccessText: { color: '#5F6D7A', lineHeight: 19, fontSize: 13 },
   inviteCard: { backgroundColor: '#E7F0FF', padding: 22, borderRadius: 22, gap: 8 },
   inviteLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#4B658E' },
   inviteCode: { fontSize: 36, fontWeight: '900', letterSpacing: 5, color: '#163E84' },
