@@ -55,8 +55,18 @@ function Button({
 
 const WEB_APP_URL = 'https://jaodajunq.github.io/JunqLife/'
 
+function errorMessage(error: unknown, fallback = 'Tente novamente.') {
+  if (error instanceof Error && error.message) return error.message
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = String((error as { message?: unknown }).message ?? '').trim()
+    if (message) return message
+  }
+  if (typeof error === 'string' && error.trim()) return error.trim()
+  return fallback
+}
+
 function authErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error ?? '')
+  const message = errorMessage(error, '')
   const normalized = message.toLowerCase()
 
   if (normalized.includes('invalid login credentials')) {
@@ -364,7 +374,7 @@ function HomeScreen() {
       )
       setSharingState(Object.fromEntries(pairs))
     } catch (error) {
-      Alert.alert('Erro ao carregar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert('Erro ao carregar', errorMessage(error))
     }
   }, [user])
 
@@ -383,7 +393,7 @@ function HomeScreen() {
       setNewCircle('')
       await refresh()
     } catch (error) {
-      Alert.alert('Não foi possível criar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert('Não foi possível criar', errorMessage(error))
     } finally {
       setBusy(false)
     }
@@ -398,7 +408,7 @@ function HomeScreen() {
       await refresh()
       Alert.alert('Entrou!', 'Você agora faz parte do círculo.')
     } catch (error) {
-      Alert.alert('Convite inválido', error instanceof Error ? error.message : 'Confira o código.')
+      Alert.alert('Convite inválido', errorMessage(error, 'Confira o código.'))
     } finally {
       setBusy(false)
     }
@@ -419,7 +429,7 @@ function HomeScreen() {
       }
     } catch (error) {
       setSharingState((current) => ({ ...current, [circleId]: previous }))
-      Alert.alert('Não foi possível alterar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert('Não foi possível alterar', errorMessage(error))
     }
   }
 
@@ -443,7 +453,7 @@ function HomeScreen() {
     } catch (error) {
       Alert.alert(
         'Não foi possível alterar o rastreamento',
-        error instanceof Error ? error.message : 'Confira as permissões de localização do aparelho.',
+        errorMessage(error, 'Confira as permissões de localização do aparelho.'),
       )
     } finally {
       setTrackingBusy(false)
@@ -462,7 +472,7 @@ function HomeScreen() {
       const sent = await sendPositionNow()
       Alert.alert(sent ? 'Posição enviada' : 'Não foi possível enviar', sent ? 'O ponto atual foi enviado ao JunqLife.' : 'Confira sinal GPS, internet e permissões.')
     } catch (error) {
-      Alert.alert('Erro no GPS', error instanceof Error ? error.message : 'Confira as permissões do aparelho.')
+      Alert.alert('Erro no GPS', errorMessage(error, 'Confira as permissões do aparelho.'))
     } finally {
       setTrackingBusy(false)
     }
@@ -484,7 +494,7 @@ function HomeScreen() {
       const code = await createInvite(circle.id)
       setGeneratedCode(code)
     } catch (error) {
-      Alert.alert('Não foi possível gerar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert('Não foi possível gerar', errorMessage(error))
     } finally {
       setBusy(false)
     }
