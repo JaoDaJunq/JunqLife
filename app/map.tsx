@@ -43,6 +43,7 @@ export default function CircleMapScreen() {
   const [placeName, setPlaceName] = useState('')
   const [placeRadius, setPlaceRadius] = useState('100')
   const [placeBusy, setPlaceBusy] = useState(false)
+  const [placeDraft, setPlaceDraft] = useState<[number, number] | null>(null)
 
   const refresh = useCallback(async () => {
     if (!circleId) return
@@ -174,8 +175,14 @@ export default function CircleMapScreen() {
     return null
   }, [selectedMember, user?.id])
 
+  const placeCoordinate = useMemo<[number, number] | null>(() => {
+    if (placeDraft) return placeDraft
+    if (selectedLocation) return [selectedLocation.longitude, selectedLocation.latitude]
+    return null
+  }, [placeDraft, selectedLocation])
+
   const handleCreatePlace = async () => {
-    if (!circleId || !user || !selectedLocation || placeBusy) return
+    if (!circleId || !user || !placeCoordinate || placeBusy) return
 
     const radiusM = Number(placeRadius.replace(',', '.'))
     setPlaceBusy(true)
@@ -183,14 +190,15 @@ export default function CircleMapScreen() {
       const place = await createPlace({
         circleId,
         name: placeName,
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
+        latitude: placeCoordinate[1],
+        longitude: placeCoordinate[0],
         radiusM,
         userId: user.id,
       })
       setPlaces((current) => [...current, place])
       setPlaceName('')
       setPlaceRadius('100')
+      setPlaceDraft(null)
       Alert.alert('Local salvo', `${place.name} agora aparece no mapa deste círculo.`)
     } catch (error) {
       Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.')
@@ -281,7 +289,9 @@ export default function CircleMapScreen() {
           selectedUserId={selectedUserId}
           routeCoordinates={routeCoordinates}
           places={places}
+          draftCoordinate={isOwner ? placeDraft : null}
           onMemberPress={setSelectedUserId}
+          onMapPress={isOwner ? setPlaceDraft : undefined}
         />
 
         {selectedMember && (
@@ -356,12 +366,23 @@ export default function CircleMapScreen() {
           </View>
         )}
 
-        {isOwner && selectedLocation && (
+        {isOwner && placeCoordinate && (
           <View style={styles.placeCreateCard}>
-            <Text style={styles.cardTitle}>Salvar local desta posição</Text>
-            <Text style={styles.placeHelp}>
-              Usa a posição atualmente selecionada como centro da geofence.
-            </Text>
+            <View style={styles.placeCreateHeader}>
+              <View style={styles.flex}>
+                <Text style={styles.cardTitle}>Salvar local</Text>
+                <Text style={styles.placeHelp}>
+                  {placeDraft
+                    ? 'Ponto escolhido diretamente no mapa.'
+                    : 'Usando a posição do membro selecionado. Toque no mapa para escolher outro ponto.'}
+                </Text>
+              </View>
+              {placeDraft && (
+                <Pressable onPress={() => setPlaceDraft(null)}>
+                  <Text style={styles.link}>Cancelar ponto</Text>
+                </Pressable>
+              )}
+            </View>
             <TextInput
               value={placeName}
               onChangeText={setPlaceName}
@@ -398,7 +419,7 @@ export default function CircleMapScreen() {
             <Text style={styles.emptyPlaceTitle}>Nenhum local salvo</Text>
             <Text style={styles.emptyPlaceText}>
               {isOwner
-                ? 'Selecione uma posição no mapa para criar o primeiro local.'
+                ? 'Toque no mapa para escolher onde criar o primeiro local.'
                 : 'O owner do círculo ainda não cadastrou nenhum local.'}
             </Text>
           </View>
@@ -481,6 +502,7 @@ const styles = StyleSheet.create({
   errorTitle: { fontSize: 18, fontWeight: '800', color: '#1B2228' },
   selectedCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 18, gap: 16 },
   placeCreateCard: { backgroundColor: '#F0ECFF', borderRadius: 22, padding: 18, gap: 12 },
+  placeCreateHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardTitle: { fontSize: 18, fontWeight: '900', color: '#171D22' },
   placeHelp: { color: '#665D82', lineHeight: 19 },
   input: { backgroundColor: '#FFFFFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: '#161C21' },

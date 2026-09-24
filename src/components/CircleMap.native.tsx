@@ -96,13 +96,23 @@ export default function CircleMap({
   selectedUserId,
   routeCoordinates = [],
   places = [],
+  draftCoordinate = null,
   onMemberPress,
+  onMapPress,
 }: CircleMapProps) {
   const cameraRef = useRef<CameraRef>(null)
   const visibleMembers = useMemo(
     () => locationsForMap(members, currentUserId),
     [members, currentUserId],
   )
+
+  const fallbackPoint = useMemo(() => {
+    const member = visibleMembers[0]?.location
+    if (member) return [member.longitude, member.latitude] as [number, number]
+    const place = places[0]
+    if (place) return [place.longitude, place.latitude] as [number, number]
+    return draftCoordinate
+  }, [visibleMembers, places, draftCoordinate])
 
   const initialViewState = useMemo<InitialViewState>(() => {
     const bounds = boundsFor(visibleMembers, places)
@@ -113,10 +123,9 @@ export default function CircleMap({
       }
     }
 
-    const first = visibleMembers[0]?.location
-    if (first) {
+    if (fallbackPoint) {
       return {
-        center: [first.longitude, first.latitude],
+        center: fallbackPoint,
         zoom: 14,
       }
     }
@@ -125,7 +134,7 @@ export default function CircleMap({
       center: [-52.0, -15.0],
       zoom: 3.4,
     }
-  }, [visibleMembers])
+  }, [visibleMembers, places, fallbackPoint])
 
   const fitEveryone = () => {
     const bounds = boundsFor(visibleMembers, places)
@@ -138,10 +147,9 @@ export default function CircleMap({
       return
     }
 
-    const first = visibleMembers[0]?.location
-    if (first) {
+    if (fallbackPoint) {
       cameraRef.current?.easeTo({
-        center: [first.longitude, first.latitude],
+        center: fallbackPoint,
         zoom: 15,
         duration: 500,
       })
@@ -150,7 +158,15 @@ export default function CircleMap({
 
   return (
     <View style={styles.container}>
-      <Map style={styles.map} mapStyle={MAP_STYLE}>
+      <Map
+        style={styles.map}
+        mapStyle={MAP_STYLE}
+        onPress={(event) => {
+          if (!onMapPress) return
+          const [longitude, latitude] = event.nativeEvent.lngLat
+          onMapPress([longitude, latitude])
+        }}
+      >
         <Camera ref={cameraRef} initialViewState={initialViewState} maxZoom={18} />
 
         {places.map((place) => (
@@ -191,6 +207,18 @@ export default function CircleMap({
             </View>
           </Marker>
         ))}
+
+        {draftCoordinate && (
+          <Marker
+            id="place-draft"
+            lngLat={draftCoordinate}
+            anchor="center"
+          >
+            <View style={styles.draftMarker}>
+              <Text style={styles.draftMarkerText}>+</Text>
+            </View>
+          </Marker>
+        )}
 
         {routeCoordinates.length >= 2 && (
           <GeoJSONSource
@@ -248,7 +276,7 @@ export default function CircleMap({
         <Text style={styles.fitButtonText}>Enquadrar</Text>
       </Pressable>
 
-      {visibleMembers.length === 0 && (
+      {visibleMembers.length === 0 && places.length === 0 && !draftCoordinate && (
         <View style={styles.emptyOverlay}>
           <Text style={styles.emptyTitle}>Nenhuma posição ainda</Text>
           <Text style={styles.emptyText}>Quando alguém enviar o primeiro ponto, o marcador aparece aqui.</Text>
@@ -292,6 +320,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeMarkerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 17 },
+  draftMarker: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#7C5CFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  draftMarkerText: { color: '#7C5CFC', fontWeight: '900', fontSize: 24, lineHeight: 25 },
   markerPointer: {
     width: 0,
     height: 0,
