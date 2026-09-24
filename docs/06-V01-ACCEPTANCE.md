@@ -44,7 +44,7 @@ Legenda:
 - ✅ bateria
 - ✅ precisão
 - ✅ upload com retry
-- 🧪 app minimizado por período prolongado
+- ✅ tracking contínuo observado por ~4h no aparelho real
 - 🧪 tela bloqueada por período prolongado
 - 🧪 perda e retorno de internet
 - 🧪 app encerrado pelo usuário/sistema
@@ -56,6 +56,10 @@ Legenda:
 - ✅ distância e pontos
 - ✅ dois usuários reais possuem current_location
 - ✅ RLS permite os dois membros compartilhando se enxergarem
+- ✅ RLS bloqueia outsider de current_locations
+- ✅ sharing OFF remove a posição do segundo usuário da visão do owner
+- ✅ histórico entre membros autorizado pelo círculo
+- ✅ outsider recebe zero pontos do histórico
 - 🧪 comprovar visualmente os dois marcadores em dois aparelhos simultaneamente
 - ✅ pan/zoom/rotate/pitch e controles de mapa
 - ✅ Places visuais com raio
