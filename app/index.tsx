@@ -53,12 +53,32 @@ function Button({
   )
 }
 
+const WEB_APP_URL = 'https://jaodajunq.github.io/JunqLife/'
+
+function authErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('invalid login credentials')) {
+    return 'E-mail ou senha incorretos. Se você acabou de criar a conta, confirme o e-mail primeiro.'
+  }
+  if (normalized.includes('email not confirmed')) {
+    return 'Seu e-mail ainda não foi confirmado. Abra o e-mail do JunqLife ou toque em “Reenviar confirmação”.'
+  }
+  if (normalized.includes('redirect')) {
+    return 'Não foi possível concluir o redirecionamento de autenticação. Tente novamente.'
+  }
+
+  return message || 'Tente novamente.'
+}
+
 function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resending, setResending] = useState(false)
 
   const submit = async () => {
     if (!email.trim() || password.length < 6 || (mode === 'signup' && !name.trim())) {
@@ -78,7 +98,10 @@ function AuthScreen() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
-          options: { data: { display_name: name.trim() } },
+          options: {
+            data: { display_name: name.trim() },
+            emailRedirectTo: WEB_APP_URL,
+          },
         })
         if (error) throw error
         if (!data.session) {
@@ -87,9 +110,36 @@ function AuthScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Não foi possível continuar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert('Não foi possível continuar', authErrorMessage(error))
     } finally {
       setBusy(false)
+    }
+  }
+
+  const resendConfirmation = async () => {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      Alert.alert('Informe seu e-mail', 'Digite o e-mail da conta para reenviar a confirmação.')
+      return
+    }
+
+    setResending(true)
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
+        options: { emailRedirectTo: WEB_APP_URL },
+      })
+      if (error) throw error
+
+      Alert.alert(
+        'Confirmação reenviada',
+        'Confira sua caixa de entrada e o spam. O link agora volta para o JunqLife.',
+      )
+    } catch (error) {
+      Alert.alert('Não foi possível reenviar', authErrorMessage(error))
+    } finally {
+      setResending(false)
     }
   }
 
@@ -137,6 +187,14 @@ function AuthScreen() {
               {mode === 'login' ? 'Ainda não tem conta? Criar agora' : 'Já tem conta? Entrar'}
             </Text>
           </Pressable>
+
+          {mode === 'login' && (
+            <Pressable onPress={resendConfirmation} disabled={resending || busy}>
+              <Text style={styles.linkMuted}>
+                {resending ? 'Reenviando confirmação...' : 'Não confirmou o e-mail? Reenviar confirmação'}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -470,6 +528,7 @@ const styles = StyleSheet.create({
   buttonText: { color: 'white', fontWeight: '800', fontSize: 15 },
   buttonSecondaryText: { color: '#101418' },
   link: { color: '#356AE6', fontWeight: '700' },
+  linkMuted: { color: '#66727C', fontWeight: '700', marginTop: 2 },
   inviteCard: { backgroundColor: '#E7F0FF', padding: 22, borderRadius: 22, gap: 8 },
   inviteLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#4B658E' },
   inviteCode: { fontSize: 36, fontWeight: '900', letterSpacing: 5, color: '#163E84' },
