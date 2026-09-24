@@ -1,6 +1,6 @@
 const { withProjectBuildGradle } = require('@expo/config-plugins')
 
-const KOTLIN_VERSION = '2.3.21'
+const KOTLIN_VERSION = '2.3.20'
 
 module.exports = function withKotlinCompiler(config) {
   return withProjectBuildGradle(config, (config) => {
