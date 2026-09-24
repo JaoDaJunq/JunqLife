@@ -2,3 +2,9 @@ project_id = "JunqLife"
 
 [functions.location-ingest]
 verify_jwt = true
+
+[functions.circle-invite-create]
+verify_jwt = true
+
+[functions.circle-invite-accept]
+verify_jwt = true
