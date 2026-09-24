@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+
+# local env / secrets
+.env
+.env.*
+!.env.example
+supabase/functions/.env
+
+# misc
+.DS_Store
+*.log
