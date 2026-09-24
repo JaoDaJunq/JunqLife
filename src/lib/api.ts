@@ -144,3 +144,61 @@ export async function deletePlace(placeId: string) {
 
   if (error) throw error
 }
+
+
+export type CircleMemberRole = 'owner' | 'admin' | 'member'
+
+export type CircleMemberDetails = {
+  circleId: string
+  userId: string
+  role: CircleMemberRole
+  joinedAt: string
+  displayName: string
+  avatarPath: string | null
+}
+
+export async function listCircleMembers(circleId: string) {
+  const { data: memberships, error: membershipsError } = await supabase
+    .from('circle_members')
+    .select('circle_id,user_id,role,joined_at')
+    .eq('circle_id', circleId)
+    .order('joined_at', { ascending: true })
+
+  if (membershipsError) throw membershipsError
+  if (!memberships?.length) return [] as CircleMemberDetails[]
+
+  const userIds = memberships.map((membership) => membership.user_id)
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id,display_name,avatar_path')
+    .in('id', userIds)
+
+  if (profilesError) throw profilesError
+
+  const profileById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile] as const),
+  )
+
+  return memberships.map((membership) => {
+    const profile = profileById.get(membership.user_id)
+    return {
+      circleId: membership.circle_id,
+      userId: membership.user_id,
+      role: membership.role as CircleMemberRole,
+      joinedAt: membership.joined_at,
+      displayName: profile?.display_name ?? 'Membro',
+      avatarPath: profile?.avatar_path ?? null,
+    }
+  }) as CircleMemberDetails[]
+}
+
+export async function removeCircleMember(circleId: string, userId: string) {
+  const { error } = await supabase
+    .from('circle_members')
+    .delete()
+    .eq('circle_id', circleId)
+    .eq('user_id', userId)
+
+  if (error) throw error
+}

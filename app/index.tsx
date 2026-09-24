@@ -620,6 +620,11 @@ function HomeScreen() {
                   onPress={() => router.push({ pathname: '/map', params: { circleId: circle.id } })}
                   secondary
                 />
+                <Button
+                  title="Gerenciar círculo"
+                  onPress={() => router.push({ pathname: '/circle', params: { circleId: circle.id } })}
+                  secondary
+                />
 
                 <View style={styles.sharingRow}>
                   <View style={styles.flex}>
