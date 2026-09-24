@@ -25,8 +25,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let mounted = true
-    let bootstrapped = false
-
     const bootstrap = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession()
@@ -53,7 +51,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
           setSession({ ...storedSession, user: serverUser })
         }
       } finally {
-        bootstrapped = true
         if (mounted) setLoading(false)
       }
     }
@@ -65,7 +62,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       // The initial session comes directly from local storage. Bootstrap above
       // validates it against the Auth server before the app trusts it.
-      if (event === 'INITIAL_SESSION' && !bootstrapped) return
+      if (event === 'INITIAL_SESSION') return
 
       if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
       if (event === 'SIGNED_OUT') setRecoveryMode(false)
