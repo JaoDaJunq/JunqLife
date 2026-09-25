@@ -15,15 +15,20 @@ import { useAuth } from '@/src/context/AuthProvider'
 import { getMyProfile, updateMyProfile } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
 
-const RELEASE_API = 'https://api.github.com/repos/JaoDaJunq/JunqLife/releases/latest'
+const RELEASES_API = 'https://api.github.com/repos/JaoDaJunq/JunqLife/releases?per_page=5'
 const FALLBACK_DOWNLOAD = 'https://github.com/JaoDaJunq/JunqLife/releases/latest/download/JunqLife.apk'
 
 type ReleaseInfo = {
   tag_name?: string
+  name?: string
+  body?: string
+  draft?: boolean
+  prerelease?: boolean
   published_at?: string
   html_url?: string
   assets?: Array<{
     name?: string
+    size?: number
     browser_download_url?: string
   }>
 }
@@ -35,12 +40,28 @@ function formatDate(value?: string) {
   return date.toLocaleDateString('pt-BR')
 }
 
+function formatBytes(value?: number) {
+  if (!value || value <= 0) return null
+  const mb = value / 1024 / 1024
+  return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`
+}
+
+function cleanReleaseBody(value?: string) {
+  if (!value) return 'Melhorias e correções desta versão.'
+  const cleaned = value
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '• ')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .trim()
+  return cleaned || 'Melhorias e correções desta versão.'
+}
+
 export default function WebPortal() {
   const { user } = useAuth()
   const [profileName, setProfileName] = useState('')
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileLoading, setProfileLoading] = useState(true)
-  const [release, setRelease] = useState<ReleaseInfo | null>(null)
+  const [releases, setReleases] = useState<ReleaseInfo[]>([])
   const [releaseLoading, setReleaseLoading] = useState(true)
 
   useEffect(() => {
@@ -70,18 +91,23 @@ export default function WebPortal() {
   useEffect(() => {
     let active = true
 
-    fetch(RELEASE_API, {
+    fetch(RELEASES_API, {
       headers: { Accept: 'application/vnd.github+json' },
     })
       .then(async (response) => {
         if (!response.ok) throw new Error('release_unavailable')
-        return (await response.json()) as ReleaseInfo
+        return (await response.json()) as ReleaseInfo[]
       })
-      .then((nextRelease) => {
-        if (active) setRelease(nextRelease)
+      .then((nextReleases) => {
+        if (!active) return
+        setReleases(
+          nextReleases
+            .filter((item) => !item.draft && !item.prerelease)
+            .slice(0, 5),
+        )
       })
       .catch(() => {
-        if (active) setRelease(null)
+        if (active) setReleases([])
       })
       .finally(() => {
         if (active) setReleaseLoading(false)
@@ -93,14 +119,17 @@ export default function WebPortal() {
   }, [])
 
   const confirmed = Boolean(user?.email_confirmed_at)
+  const release = releases[0] ?? null
 
-  const downloadUrl = useMemo(() => {
-    const asset = release?.assets?.find((item) => item.name === 'JunqLife.apk')
-    return asset?.browser_download_url || FALLBACK_DOWNLOAD
-  }, [release])
+  const downloadAsset = useMemo(
+    () => release?.assets?.find((item) => item.name === 'JunqLife.apk') ?? null,
+    [release],
+  )
 
+  const downloadUrl = downloadAsset?.browser_download_url || FALLBACK_DOWNLOAD
   const releaseVersion =
-    release?.tag_name || `v${Constants.expoConfig?.version ?? '0.1.12'}`
+    release?.tag_name || `v${Constants.expoConfig?.version ?? '0.1.14'}`
+  const releaseSize = formatBytes(downloadAsset?.size)
 
   const saveProfile = async () => {
     if (!user || profileBusy) return
@@ -201,7 +230,7 @@ export default function WebPortal() {
                 <Text style={styles.versionDate}>
                   {releaseLoading
                     ? 'Buscando a última build oficial'
-                    : `Publicada em ${formatDate(release?.published_at)}`}
+                    : `Publicada em ${formatDate(release?.published_at)}${releaseSize ? ` · ${releaseSize}` : ''}`}
                 </Text>
               </View>
 
@@ -249,14 +278,43 @@ export default function WebPortal() {
             </View>
           </View>
 
+          <View style={styles.card}>
+            <Text style={styles.cardEyebrow}>HISTÓRICO DE VERSÕES</Text>
+            <Text style={styles.cardTitle}>Atualizações recentes</Text>
+            {releaseLoading ? (
+              <ActivityIndicator />
+            ) : releases.length === 0 ? (
+              <Text style={styles.cardText}>Não foi possível consultar o histórico agora. O download direto continua disponível.</Text>
+            ) : (
+              <View style={styles.releaseList}>
+                {releases.map((item, index) => (
+                  <View key={item.tag_name ?? String(index)} style={styles.releaseItem}>
+                    <View style={styles.releaseHeader}>
+                      <Text style={styles.releaseTag}>{item.tag_name ?? item.name ?? 'Versão'}</Text>
+                      <Text style={styles.releaseDate}>{formatDate(item.published_at)}</Text>
+                    </View>
+                    <Text style={styles.releaseBody} numberOfLines={index === 0 ? 8 : 3}>
+                      {cleanReleaseBody(item.body)}
+                    </Text>
+                    {item.html_url && (
+                      <Pressable onPress={() => void Linking.openURL(item.html_url!)}>
+                        <Text style={styles.link}>Ver release no GitHub</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           <View style={styles.grid}>
             <View style={styles.card}>
-              <Text style={styles.cardEyebrow}>ATUALIZAÇÕES</Text>
-              <Text style={styles.cardTitle}>O que entrou agora</Text>
-              <Text style={styles.change}>• Central web para conta e download</Text>
-              <Text style={styles.change}>• APK simplificado para login</Text>
-              <Text style={styles.change}>• Releases Android automáticas</Text>
-              <Text style={styles.change}>• Gestão de membros e admins do círculo</Text>
+              <Text style={styles.cardEyebrow}>INSTALAÇÃO</Text>
+              <Text style={styles.cardTitle}>Como atualizar</Text>
+              <Text style={styles.change}>1. Baixe o APK mais recente nesta página.</Text>
+              <Text style={styles.change}>2. Abra o arquivo baixado no Android.</Text>
+              <Text style={styles.change}>3. Se o sistema pedir, autorize a instalação desta fonte.</Text>
+              <Text style={styles.change}>4. Instale por cima da versão atual. Sua conta e seus dados continuam intactos.</Text>
             </View>
 
             <View style={styles.card}>
@@ -361,6 +419,12 @@ const styles = StyleSheet.create({
   stepTitle: { color: '#20272D', fontWeight: '900' },
   stepText: { color: '#6F7A83', marginTop: 2, lineHeight: 19 },
   change: { color: '#54616B', lineHeight: 20 },
+  releaseList: { gap: 12 },
+  releaseItem: { backgroundColor: '#F5F7F9', borderRadius: 16, padding: 15, gap: 7 },
+  releaseHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  releaseTag: { color: '#1F2A33', fontWeight: '900', fontSize: 16 },
+  releaseDate: { color: '#89939B', fontSize: 12, fontWeight: '700' },
+  releaseBody: { color: '#5F6B75', lineHeight: 19, fontSize: 13 },
   comingSoon: { alignSelf: 'flex-start', backgroundColor: '#EEE9FF', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   comingSoonText: { color: '#6345B8', fontSize: 12, fontWeight: '900' },
   footer: { textAlign: 'center', color: '#8B959D', fontSize: 11, marginVertical: 14 },

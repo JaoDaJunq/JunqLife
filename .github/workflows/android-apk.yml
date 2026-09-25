@@ -82,10 +82,12 @@ jobs:
           VERSION: ${{ steps.app_version.outputs.version }}
         run: |
           TAG="v$VERSION"
-          NOTES="Build oficial do JunqLife Android. Instale por cima da versão anterior para atualizar."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" artifacts/JunqLife.apk --clobber
-            gh release edit "$TAG" --title "JunqLife $VERSION" --notes "$NOTES"
+            gh release edit "$TAG" --title "JunqLife $VERSION"
           else
-            gh release create "$TAG" artifacts/JunqLife.apk --title "JunqLife $VERSION" --notes "$NOTES"
+            gh release create "$TAG" artifacts/JunqLife.apk \
+              --title "JunqLife $VERSION" \
+              --notes "APK oficial do JunqLife para Android. Instale por cima da versão anterior para atualizar." \
+              --generate-notes
           fi
