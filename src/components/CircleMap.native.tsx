@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   Camera,
   Map,
@@ -12,6 +12,7 @@ import {
   type LngLatBounds,
 } from '@maplibre/maplibre-react-native'
 import type { CircleMapProps } from './CircleMap.types'
+import { getAvatarPublicUrl } from '@/src/lib/api'
 
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
 
@@ -280,6 +281,7 @@ export default function CircleMap({
           const location = member.location!
           const isSelf = member.userId === currentUserId
           const isSelected = member.userId === selectedUserId
+          const avatarUrl = getAvatarPublicUrl(member.avatarPath)
 
           return (
             <Marker
@@ -295,7 +297,11 @@ export default function CircleMap({
                   isSelf && styles.markerSelf,
                   isSelected && styles.markerSelected,
                 ]}>
-                  <Text style={styles.markerText}>{initials(member.displayName)}</Text>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.markerPhoto} />
+                  ) : (
+                    <Text style={styles.markerText}>{initials(member.displayName)}</Text>
+                  )}
                 </View>
                 <View style={styles.markerPointer} />
               </View>
@@ -362,6 +368,7 @@ const styles = StyleSheet.create({
   markerSelf: { backgroundColor: '#356AE6' },
   markerSelected: { transform: [{ scale: 1.16 }] },
   markerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
+  markerPhoto: { width: '100%', height: '100%', borderRadius: 999 },
   placeMarker: {
     width: 34,
     height: 34,
