@@ -16,6 +16,7 @@ import {
   listCircles,
   removeCircleMember,
   setCircleMemberRole,
+  transferCircleOwnership,
   type Circle,
   type CircleMemberDetails,
 } from '@/src/lib/api'
@@ -72,6 +73,48 @@ export default function CircleManagementScreen() {
   )
 
   const isOwner = circle?.owner_id === user?.id
+
+  const transferOwnership = (member: CircleMemberDetails) => {
+    if (!circleId || !user || !isOwner || member.userId === user.id || busyUserId) return
+
+    Alert.alert(
+      'Transferir propriedade?',
+      `${member.displayName} será o novo owner deste círculo. Você continuará no círculo como membro e poderá sair depois, se quiser.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Transferir owner',
+          style: 'destructive',
+          onPress: async () => {
+            setBusyUserId(member.userId)
+            try {
+              const result = await transferCircleOwnership(circleId, member.userId)
+
+              setCircle((current) =>
+                current ? { ...current, owner_id: result.newOwnerId } : current,
+              )
+              setMembers((current) =>
+                current.map((item) => {
+                  if (item.userId === result.oldOwnerId) return { ...item, role: 'member' }
+                  if (item.userId === result.newOwnerId) return { ...item, role: 'owner' }
+                  return item
+                }),
+              )
+
+              Alert.alert(
+                'Propriedade transferida',
+                `${member.displayName} agora é o owner deste círculo.`,
+              )
+            } catch (error) {
+              Alert.alert('Não foi possível transferir', errorMessage(error))
+            } finally {
+              setBusyUserId(null)
+            }
+          },
+        },
+      ],
+    )
+  }
 
   const changeRole = (member: CircleMemberDetails) => {
     if (!circleId || !isOwner || member.role === 'owner' || busyUserId) return
@@ -207,7 +250,7 @@ export default function CircleManagementScreen() {
           <Text style={styles.summaryTitle}>{members.length} {members.length === 1 ? 'membro' : 'membros'}</Text>
           <Text style={styles.summaryText}>
             {isOwner
-              ? 'Como owner, você pode remover membros. Transferência de propriedade entra na próxima etapa.'
+              ? 'Como owner, você pode gerenciar papéis, remover membros e transferir a propriedade.'
               : `Seu papel neste círculo: ${roleLabel(currentMember.role)}.`}
           </Text>
         </View>
@@ -248,6 +291,15 @@ export default function CircleManagementScreen() {
               {canRemove && (
                 <View style={styles.memberActions}>
                   <Pressable
+                    onPress={() => transferOwnership(member)}
+                    disabled={Boolean(busyUserId)}
+                    style={styles.ownerAction}
+                  >
+                    <Text style={styles.ownerActionText}>
+                      {busyUserId === member.userId ? '...' : 'Transferir owner'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
                     onPress={() => changeRole(member)}
                     disabled={Boolean(busyUserId)}
                     style={styles.roleAction}
@@ -279,7 +331,7 @@ export default function CircleManagementScreen() {
           <View style={styles.ownerNote}>
             <Text style={styles.ownerNoteTitle}>Você é o owner</Text>
             <Text style={styles.ownerNoteText}>
-              Para sair deste círculo será necessário primeiro transferir a propriedade. Isso evita deixar um círculo sem responsável.
+              Transfira a propriedade para outro membro antes de sair. Isso evita deixar o círculo sem responsável.
             </Text>
           </View>
         ) : (
@@ -329,6 +381,8 @@ const styles = StyleSheet.create({
   roleText: { color: '#4A5660', fontSize: 11, fontWeight: '900' },
   joinedText: { color: '#8A949C', fontSize: 11 },
   memberActions: { alignItems: 'flex-end', gap: 4 },
+  ownerAction: { paddingHorizontal: 8, paddingVertical: 5 },
+  ownerActionText: { color: '#7C5CFC', fontWeight: '900', fontSize: 11 },
   roleAction: { paddingHorizontal: 8, paddingVertical: 5 },
   roleActionText: { color: '#356AE6', fontWeight: '800', fontSize: 11 },
   removeButton: { paddingHorizontal: 8, paddingVertical: 5 },
