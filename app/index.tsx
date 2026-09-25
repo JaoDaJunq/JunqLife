@@ -26,6 +26,7 @@ import {
   type Circle,
 } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
+import { checkForAppUpdate, type AppUpdate } from '@/src/lib/update'
 import {
   TRACKING_SUPPORTED,
   sendPositionNow,
@@ -379,6 +380,7 @@ function HomeScreen() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
   const [trackingBusy, setTrackingBusy] = useState(false)
+  const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null)
 
   const displayName = useMemo(
     () => String(user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Você'),
@@ -403,6 +405,12 @@ function HomeScreen() {
     refresh()
     if (TRACKING_SUPPORTED) {
       trackingIsActive().then(setTrackingActive).catch(() => setTrackingActive(false))
+    }
+
+    if (Platform.OS !== 'web') {
+      checkForAppUpdate()
+        .then(setAppUpdate)
+        .catch(() => setAppUpdate(null))
     }
   }, [refresh])
 
@@ -538,6 +546,24 @@ function HomeScreen() {
           <Text style={styles.heroTitle}>Seu círculo começa aqui.</Text>
           <Text style={styles.heroText}>Crie um grupo ou entre com o código de alguém. Localização continua desligada até você permitir.</Text>
         </View>
+
+        {appUpdate && (
+          <View style={styles.updateCard}>
+            <View style={styles.flex}>
+              <Text style={styles.updateEyebrow}>ATUALIZAÇÃO DISPONÍVEL</Text>
+              <Text style={styles.updateTitle}>JunqLife {appUpdate.latestVersion}</Text>
+              <Text style={styles.updateText}>
+                Você está usando {appUpdate.currentVersion}. Abra a Central para baixar a versão mais recente.
+              </Text>
+            </View>
+            <Pressable
+              style={styles.updateButton}
+              onPress={() => void Linking.openURL(WEB_APP_URL)}
+            >
+              <Text style={styles.updateButtonText}>Abrir Central</Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.trackingCard}>
           <View style={styles.circleTop}>
@@ -695,6 +721,19 @@ const styles = StyleSheet.create({
   heroText: { color: '#C5CDD5', lineHeight: 21 },
   card: { backgroundColor: 'white', padding: 20, borderRadius: 22, gap: 12 },
   trackingCard: { backgroundColor: '#E8F7EE', padding: 20, borderRadius: 22, gap: 12 },
+  updateCard: {
+    backgroundColor: '#EEF3FF',
+    padding: 18,
+    borderRadius: 22,
+    gap: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  updateEyebrow: { color: '#5A75B8', fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
+  updateTitle: { color: '#173E91', fontSize: 19, fontWeight: '900', marginTop: 3 },
+  updateText: { color: '#62708A', lineHeight: 18, fontSize: 13, marginTop: 3 },
+  updateButton: { backgroundColor: '#356AE6', borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11 },
+  updateButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 12 },
   trackingDescription: { color: '#587064', lineHeight: 19, marginTop: 4 },
   statusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#AAB5AF' },
   statusDotActive: { backgroundColor: '#18A558' },
