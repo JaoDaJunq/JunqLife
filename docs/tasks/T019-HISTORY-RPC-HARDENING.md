@@ -7,7 +7,9 @@ O projeto hospedado apresentava drift: `public.get_circle_history` estava marcad
 - `public.get_circle_history` volta explicitamente para `SECURITY INVOKER`;
 - `public` e `anon` não podem executar a RPC;
 - `authenticated` mantém acesso;
-- nenhuma assinatura, retorno ou regra funcional foi alterada.
+- o wrapper recebe `USAGE` mínimo sobre o schema privado para alcançar o helper;
+- o helper valida explicitamente `p_viewer_id = auth.uid()`, impedindo impersonação do viewer;
+- nenhuma assinatura ou retorno público foi alterado.
 
 ## Validação
 O Security Advisor do Supabase deixou de reportar o alerta de função `SECURITY DEFINER` exposta a usuários autenticados após a migration.
