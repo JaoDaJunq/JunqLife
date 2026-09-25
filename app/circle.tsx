@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/src/context/AuthProvider'
 import {
+  getAvatarPublicUrl,
   listCircleMembers,
   listCircles,
   removeCircleMember,
@@ -263,12 +265,17 @@ export default function CircleManagementScreen() {
           const isSelf = member.userId === user.id
           const canRemove = isOwner && !isSelf && member.role !== 'owner'
           const initials = member.displayName.trim().slice(0, 2).toUpperCase() || '?'
+          const avatarUrl = getAvatarPublicUrl(member.avatarPath)
 
           return (
             <View key={member.userId} style={styles.memberCard}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
-              </View>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarPhoto} />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
+              )}
 
               <View style={styles.flex}>
                 <Text style={styles.memberName}>
@@ -373,6 +380,7 @@ const styles = StyleSheet.create({
   memberCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#E8EDF2', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#34404A', fontWeight: '900', fontSize: 13 },
+  avatarPhoto: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#E8EDF2' },
   memberName: { color: '#1C2329', fontWeight: '900', fontSize: 16 },
   roleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7, marginTop: 6 },
   roleBadge: { backgroundColor: '#E9EDF0', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
