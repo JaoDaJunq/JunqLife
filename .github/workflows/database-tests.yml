@@ -3,8 +3,18 @@ name: Database Regression Tests
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/database-tests.yml'
   push:
     branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/database-tests.yml'
 
 permissions:
   contents: read
