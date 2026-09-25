@@ -11,3 +11,10 @@ verify_jwt = true
 
 [functions.circle-invite-accept]
 verify_jwt = true
+
+
+[functions.circle-member-role]
+verify_jwt = true
+
+[functions.circle-owner-transfer]
+verify_jwt = true
