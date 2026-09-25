@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Constants from 'expo-constants'
 import {
   ActivityIndicator,
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -12,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/src/context/AuthProvider'
-import { getMyProfile, updateMyProfile } from '@/src/lib/api'
+import { getAvatarPublicUrl, getMyProfile, updateMyProfile, uploadMyAvatar } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
 
 const RELEASES_API = 'https://api.github.com/repos/JaoDaJunq/JunqLife/releases?per_page=5'
@@ -59,7 +60,9 @@ function cleanReleaseBody(value?: string) {
 export default function WebPortal() {
   const { user } = useAuth()
   const [profileName, setProfileName] = useState('')
+  const [profileAvatarPath, setProfileAvatarPath] = useState<string | null>(null)
   const [profileBusy, setProfileBusy] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
   const [profileLoading, setProfileLoading] = useState(true)
   const [releases, setReleases] = useState<ReleaseInfo[]>([])
   const [releaseLoading, setReleaseLoading] = useState(true)
@@ -70,7 +73,10 @@ export default function WebPortal() {
     let active = true
     getMyProfile(user.id)
       .then((profile) => {
-        if (active) setProfileName(profile.display_name)
+        if (active) {
+          setProfileName(profile.display_name)
+          setProfileAvatarPath(profile.avatar_path)
+        }
       })
       .catch(() => {
         if (active) {
@@ -131,6 +137,39 @@ export default function WebPortal() {
     release?.tag_name || `v${Constants.expoConfig?.version ?? '0.1.14'}`
   const releaseSize = formatBytes(downloadAsset?.size)
 
+  const avatarUrl = getAvatarPublicUrl(profileAvatarPath)
+  const profileInitials = profileName.trim().slice(0, 2).toUpperCase() || '?'
+
+  const chooseAvatar = async () => {
+    if (!user || avatarBusy || typeof document === 'undefined') return
+
+    const file = await new Promise<File | null>((resolve) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/jpeg,image/png,image/webp'
+      input.onchange = () => resolve(input.files?.[0] ?? null)
+      input.oncancel = () => resolve(null)
+      input.click()
+    })
+
+    if (!file) return
+
+    setAvatarBusy(true)
+    try {
+      const profile = await uploadMyAvatar(user.id, file)
+      setProfileAvatarPath(profile.avatar_path)
+      alert('Foto de perfil atualizada.')
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message ?? '')
+          : 'Tente novamente.'
+      alert(message || 'Não foi possível atualizar a foto.')
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
   const saveProfile = async () => {
     if (!user || profileBusy) return
     setProfileBusy(true)
@@ -188,6 +227,28 @@ export default function WebPortal() {
             <View style={styles.card}>
               <Text style={styles.cardEyebrow}>SUA CONTA</Text>
               <Text style={styles.cardTitle}>Perfil</Text>
+
+              <View style={styles.avatarRow}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.profileAvatar} />
+                ) : (
+                  <View style={[styles.profileAvatar, styles.profileAvatarFallback]}>
+                    <Text style={styles.profileAvatarText}>{profileInitials}</Text>
+                  </View>
+                )}
+                <View style={styles.avatarCopy}>
+                  <Text style={styles.avatarTitle}>Sua foto</Text>
+                  <Text style={styles.avatarHelp}>JPG, PNG ou WebP · até 5 MB</Text>
+                  <Pressable
+                    onPress={() => void chooseAvatar()}
+                    disabled={avatarBusy || profileLoading}
+                  >
+                    <Text style={styles.link}>
+                      {avatarBusy ? 'Enviando...' : avatarUrl ? 'Trocar foto' : 'Adicionar foto'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>E-mail</Text>
@@ -382,6 +443,13 @@ const styles = StyleSheet.create({
   cardEyebrow: { color: '#77838D', fontSize: 10, fontWeight: '900', letterSpacing: 1.6 },
   cardTitle: { color: '#151A1F', fontSize: 22, fontWeight: '900' },
   cardText: { color: '#66727C', lineHeight: 21 },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  profileAvatar: { width: 72, height: 72, borderRadius: 36 },
+  profileAvatarFallback: { backgroundColor: '#E8EDF2', alignItems: 'center', justifyContent: 'center' },
+  profileAvatarText: { color: '#34404A', fontWeight: '900', fontSize: 18 },
+  avatarCopy: { flex: 1, gap: 3 },
+  avatarTitle: { color: '#273139', fontWeight: '900' },
+  avatarHelp: { color: '#89939B', fontSize: 12 },
   infoRow: { gap: 4 },
   infoLabel: { color: '#89939B', fontSize: 11, fontWeight: '800' },
   infoValue: { color: '#263039', fontWeight: '800' },

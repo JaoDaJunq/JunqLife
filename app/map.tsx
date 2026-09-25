@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import CircleMap from '@/src/components/CircleMap'
@@ -11,7 +11,7 @@ import {
 import { loadTodayHistory, type HistorySummary } from '@/src/lib/history'
 import { supabase } from '@/src/lib/supabase'
 import { useAuth } from '@/src/context/AuthProvider'
-import { createPlace, deletePlace, listPlaces, type Place } from '@/src/lib/api'
+import { createPlace, deletePlace, getAvatarPublicUrl, listPlaces, type Place } from '@/src/lib/api'
 
 function relativeTime(value: string, now: number) {
   const diffSeconds = Math.max(0, Math.floor((now - new Date(value).getTime()) / 1000))
@@ -303,11 +303,18 @@ export default function CircleMapScreen() {
         {selectedMember && (
           <View style={styles.selectedCard}>
             <View style={styles.memberHeader}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {selectedMember.displayName.trim().slice(0, 2).toUpperCase()}
-                </Text>
-              </View>
+              {getAvatarPublicUrl(selectedMember.avatarPath) ? (
+                <Image
+                  source={{ uri: getAvatarPublicUrl(selectedMember.avatarPath)! }}
+                  style={styles.avatarPhoto}
+                />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {selectedMember.displayName.trim().slice(0, 2).toUpperCase()}
+                  </Text>
+                </View>
+              )}
               <View style={styles.flex}>
                 <Text style={styles.selectedName}>
                   {selectedMember.displayName}{selectedMember.userId === user.id ? ' · Você' : ''}
@@ -464,9 +471,16 @@ export default function CircleMapScreen() {
               ]}
               onPress={() => setSelectedUserId(member.userId)}
             >
-              <View style={styles.avatarSmall}>
-                <Text style={styles.avatarSmallText}>{member.displayName.trim().slice(0, 2).toUpperCase()}</Text>
-              </View>
+              {getAvatarPublicUrl(member.avatarPath) ? (
+                <Image
+                  source={{ uri: getAvatarPublicUrl(member.avatarPath)! }}
+                  style={styles.avatarSmallPhoto}
+                />
+              ) : (
+                <View style={styles.avatarSmall}>
+                  <Text style={styles.avatarSmallText}>{member.displayName.trim().slice(0, 2).toUpperCase()}</Text>
+                </View>
+              )}
 
               <View style={styles.flex}>
                 <Text style={styles.memberName}>
@@ -529,6 +543,7 @@ const styles = StyleSheet.create({
   memberHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#101418', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  avatarPhoto: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#E8EDF2' },
   selectedName: { fontSize: 19, fontWeight: '900', color: '#171D22' },
   selectedStatus: { color: '#68737D', marginTop: 3 },
   statRow: { flexDirection: 'row', gap: 8 },
@@ -544,6 +559,7 @@ const styles = StyleSheet.create({
   memberCardSelected: { borderColor: '#9CB7F5' },
   avatarSmall: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#E8EDF2', alignItems: 'center', justifyContent: 'center' },
   avatarSmallText: { color: '#34404A', fontWeight: '900', fontSize: 12 },
+  avatarSmallPhoto: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#E8EDF2' },
   memberName: { color: '#1C2329', fontWeight: '800', fontSize: 15 },
   memberMeta: { color: '#7A858E', fontSize: 13, marginTop: 3 },
   onlineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#C8CFD4' },

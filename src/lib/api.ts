@@ -248,6 +248,70 @@ export async function getMyProfile(userId: string) {
   return data as Profile
 }
 
+export function getAvatarPublicUrl(avatarPath: string | null | undefined) {
+  if (!avatarPath) return null
+  const { data } = supabase.storage.from('avatars').getPublicUrl(avatarPath)
+  return data.publicUrl
+}
+
+export async function uploadMyAvatar(userId: string, file: Blob) {
+  if (!file.type || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Use uma imagem JPG, PNG ou WebP.')
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('A imagem precisa ter no máximo 5 MB.')
+  }
+
+  const extension =
+    file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
+  const unique = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const path = `${userId}/${unique}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, {
+      contentType: file.type,
+      cacheControl: '31536000',
+      upsert: false,
+    })
+
+  if (uploadError) throw uploadError
+
+  const { data: current, error: currentError } = await supabase
+    .from('profiles')
+    .select('avatar_path')
+    .eq('id', userId)
+    .single()
+
+  if (currentError) {
+    await supabase.storage.from('avatars').remove([path]).catch(() => undefined)
+    throw currentError
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      avatar_path: path,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select('id,display_name,avatar_path,created_at,updated_at')
+    .single()
+
+  if (error) {
+    await supabase.storage.from('avatars').remove([path]).catch(() => undefined)
+    throw error
+  }
+
+  if (current.avatar_path && current.avatar_path !== path) {
+    await supabase.storage.from('avatars').remove([current.avatar_path]).catch(() => undefined)
+  }
+
+  return data as Profile
+}
+
 export async function updateMyProfile(userId: string, displayName: string) {
   const cleanName = displayName.trim()
   if (cleanName.length < 2) throw new Error('Use pelo menos 2 caracteres no nome.')

@@ -15,6 +15,7 @@ export type CircleMapLocation = {
 export type CircleMapMember = {
   userId: string
   displayName: string
+  avatarPath: string | null
   role: 'owner' | 'admin' | 'member'
   sharingEnabled: boolean
   sharingUpdatedAt: string | null
@@ -56,7 +57,7 @@ export async function loadCircleMap(circleId: string): Promise<CircleMapState> {
   const [profilesResult, sharingResult, locationsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id,display_name')
+      .select('id,display_name,avatar_path')
       .in('id', userIds),
     supabase
       .from('circle_member_sharing')
@@ -81,6 +82,7 @@ export async function loadCircleMap(circleId: string): Promise<CircleMapState> {
     members: (memberships ?? []).map((member) => ({
       userId: member.user_id,
       displayName: profiles.get(member.user_id)?.display_name ?? 'Membro',
+      avatarPath: profiles.get(member.user_id)?.avatar_path ?? null,
       role: member.role as CircleMapMember['role'],
       sharingEnabled: Boolean(sharing.get(member.user_id)?.sharing_enabled),
       sharingUpdatedAt: sharing.get(member.user_id)?.updated_at ?? null,
