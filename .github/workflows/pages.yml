@@ -6,6 +6,7 @@ on:
     paths:
       - 'app/**'
       - 'src/**'
+      - 'assets/**'
       - 'app.json'
       - 'package.json'
       - '.github/workflows/pages.yml'
