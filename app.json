@@ -2,7 +2,7 @@
   "expo": {
     "name": "JunqLife",
     "slug": "junqlife",
-    "version": "0.1.16",
+    "version": "0.1.17",
     "icon": "./assets/brand/junqlife-icon.png",
     "orientation": "portrait",
     "scheme": "junqlife",
@@ -29,7 +29,7 @@
         "FOREGROUND_SERVICE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 17
+      "versionCode": 18
     },
     "web": {
       "output": "static",

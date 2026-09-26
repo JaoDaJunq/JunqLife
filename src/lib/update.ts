@@ -34,31 +34,44 @@ export function isVersionNewer(candidate: string, current: string) {
   return false
 }
 
+function withTimeout(signal: AbortSignal | undefined, timeoutMs: number) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  signal?.addEventListener('abort', () => controller.abort(), { once: true })
+  return { signal: controller.signal, timeout }
+}
+
 export async function checkForAppUpdate(): Promise<AppUpdate | null> {
   const currentVersion = Constants.expoConfig?.version ?? '0.0.0'
+  const request = withTimeout(undefined, 8000)
 
-  const response = await fetch(RELEASE_API, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-    },
-  })
+  try {
+    const response = await fetch(RELEASE_API, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+      signal: request.signal,
+    })
 
-  if (!response.ok) return null
+    if (!response.ok) return null
 
-  const release = (await response.json()) as {
-    tag_name?: string
-    draft?: boolean
-    prerelease?: boolean
-  }
+    const release = (await response.json()) as {
+      tag_name?: string
+      draft?: boolean
+      prerelease?: boolean
+    }
 
-  if (!release.tag_name || release.draft || release.prerelease) return null
+    if (!release.tag_name || release.draft || release.prerelease) return null
 
-  const latestVersion = normalize(release.tag_name)
-  if (!isVersionNewer(latestVersion, currentVersion)) return null
+    const latestVersion = normalize(release.tag_name)
+    if (!isVersionNewer(latestVersion, currentVersion)) return null
 
-  return {
-    currentVersion,
-    latestVersion,
-    tagName: release.tag_name,
+    return {
+      currentVersion,
+      latestVersion,
+      tagName: release.tag_name,
+    }
+  } finally {
+    clearTimeout(request.timeout)
   }
 }

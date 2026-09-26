@@ -59,6 +59,9 @@ export async function registerForRemoteNotifications(userId: string) {
   const allowed = await prepareLocalNotifications()
   if (!allowed) return false
   const token = await Notifications.getExpoPushTokenAsync({ projectId })
+  if (!/^Expo\[|^ExponentPushToken\[/.test(token.data)) {
+    throw new Error('O aparelho retornou um token de notificações inválido.')
+  }
   await registerPushToken({
     userId,
     token: token.data,
