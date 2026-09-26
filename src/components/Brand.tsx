@@ -1,18 +1,14 @@
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native'
+import { Image, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/src/theme'
 
-export function BrandMark({ size = 32, style }: { size?: number; style?: ViewStyle }) {
-  const head = size * 0.23
+export function BrandMark({ size = 32 }: { size?: number }) {
   return (
-    <View style={[styles.mark, { width: size, height: size }, style]} accessibilityLabel="Logo JunqLife">
-      <View style={[styles.person, styles.personLeft, { width: size * 0.48, height: size * 0.7 }]}>
-        <View style={[styles.head, { width: head, height: head, borderRadius: head / 2, top: 0 }]} />
-      </View>
-      <View style={[styles.person, styles.personRight, { width: size * 0.48, height: size * 0.7 }]}>
-        <View style={[styles.head, styles.goldHead, { width: head, height: head, borderRadius: head / 2, top: 0 }]} />
-      </View>
-      <View style={[styles.pinCut, { width: size * 0.22, height: size * 0.22, borderRadius: size * 0.11 }]} />
-    </View>
+    <Image
+      source={require('../../assets/brand/junqlife-mark.png')}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+      accessibilityLabel="Logo JunqLife"
+    />
   )
 }
 
@@ -32,13 +28,6 @@ export default function Brand({ size = 32, tagline = false }: { size?: number; t
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  mark: { position: 'relative', overflow: 'hidden' },
-  person: { position: 'absolute', top: '18%', borderTopLeftRadius: 999, borderTopRightRadius: 999 },
-  personLeft: { left: 0, backgroundColor: colors.plum, borderBottomRightRadius: 999 },
-  personRight: { right: 0, backgroundColor: colors.gold, borderBottomLeftRadius: 999 },
-  head: { position: 'absolute', alignSelf: 'center', backgroundColor: colors.plum },
-  goldHead: { backgroundColor: colors.gold },
-  pinCut: { position: 'absolute', backgroundColor: colors.cream, left: '39%', top: '46%' },
   wordmark: { fontWeight: '900', letterSpacing: -1.2 },
   junq: { color: colors.plum },
   life: { color: colors.gold },
