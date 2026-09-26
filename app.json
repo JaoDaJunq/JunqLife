@@ -35,6 +35,11 @@
       "output": "static",
       "favicon": "./assets/brand/junqlife-icon.png"
     },
+    "extra": {
+      "eas": {
+        "projectId": "6d31c547-2f24-4f53-8ed2-12ab2bac97a7"
+      }
+    },
     "plugins": [
       "expo-router",
       "expo-sqlite",
