@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   version: { color: '#4B1F5B', fontSize: 34, fontWeight: '900' },
   versionDate: { color: '#6B7890', fontSize: 12 },
   downloadButton: { backgroundColor: '#D4AF37', borderRadius: 15, paddingVertical: 16, alignItems: 'center' },
-  downloadButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
+  downloadButtonText: { color: '#24172B', fontWeight: '900', fontSize: 16 },
   disabled: { opacity: 0.45 },
   smallText: { color: '#6F7C89', fontSize: 12, lineHeight: 18 },
   steps: { gap: 14 },

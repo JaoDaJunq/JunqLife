@@ -235,8 +235,11 @@ export default function CircleMap({
             lngLat={[place.longitude, place.latitude]}
             anchor="center"
           >
-            <View style={styles.placeMarker}>
-              <Text style={styles.placeMarkerText}>⌂</Text>
+            <View style={styles.placeMarkerWrap}>
+              <View style={styles.placeMarker}>
+                <Text style={styles.placeMarkerText}>⌂</Text>
+              </View>
+              <Text style={styles.placeMarkerLabel} numberOfLines={1}>{place.name}</Text>
             </View>
           </Marker>
         ))}
@@ -369,6 +372,7 @@ const styles = StyleSheet.create({
   markerSelected: { transform: [{ scale: 1.16 }] },
   markerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
   markerPhoto: { width: '100%', height: '100%', borderRadius: 999 },
+  placeMarkerWrap: { alignItems: 'center', gap: 4 },
   placeMarker: {
     width: 34,
     height: 34,
@@ -379,7 +383,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeMarkerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 17 },
+  placeMarkerText: { color: '#4B1F5B', fontWeight: '900', fontSize: 17 },
+  placeMarkerLabel: {
+    maxWidth: 150,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D4AF37',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    color: '#4B1F5B',
+    fontSize: 11,
+    fontWeight: '900',
+  },
   draftMarker: {
     width: 38,
     height: 38,

@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   updateTitle: { color: '#4B1F5B', fontSize: 19, fontWeight: '900', marginTop: 3 },
   updateText: { color: '#62708A', lineHeight: 18, fontSize: 13, marginTop: 3 },
   updateButton: { backgroundColor: '#D4AF37', borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11 },
-  updateButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 12 },
+  updateButtonText: { color: '#24172B', fontWeight: '900', fontSize: 12 },
   trackingDescription: { color: '#587064', lineHeight: 19, marginTop: 4 },
   statusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#AAB5AF' },
   statusDotActive: { backgroundColor: '#18A558' },
