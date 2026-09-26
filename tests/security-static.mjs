@@ -40,6 +40,7 @@ for (const required of [
 ]) {
   if (!functionSource.includes(required)) violations.push(`place-event-push missing contract: ${required}`)
 }
+if (!functionSource.includes('x-junqlife-webhook-secret')) violations.push('place-event-push missing private webhook authentication')
 
 if (violations.length) {
   console.error(violations.join('\n'))

@@ -38,6 +38,27 @@ function getSecretKey() {
   return key
 }
 
+function safeEqual(left: string, right: string) {
+  const leftBytes = new TextEncoder().encode(left)
+  const rightBytes = new TextEncoder().encode(right)
+  if (leftBytes.length !== rightBytes.length) return false
+  let difference = 0
+  for (let index = 0; index < leftBytes.length; index += 1) difference |= leftBytes[index] ^ rightBytes[index]
+  return difference === 0
+}
+
+async function isTrustedWebhook(request: Request, supabase: ReturnType<typeof createClient>) {
+  const provided = request.headers.get('x-junqlife-webhook-secret')
+  if (!provided) return false
+  const { data, error } = await supabase
+    .from('push_webhook_secrets')
+    .select('secret')
+    .eq('id', 'place-event-push')
+    .maybeSingle()
+  if (error || !data?.secret) return false
+  return safeEqual(provided, data.secret)
+}
+
 function isPlaceEvent(value: unknown): value is PlaceEvent {
   if (!value || typeof value !== 'object') return false
   const record = value as Partial<PlaceEvent>
@@ -55,12 +76,14 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   try {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, getSecretKey())
+    if (!(await isTrustedWebhook(request, supabase))) return json({ error: 'invalid_webhook_secret' }, 401)
+
     const payload = (await request.json()) as WebhookPayload
     if (payload.type !== 'INSERT' || payload.table !== 'place_events' || !isPlaceEvent(payload.record)) {
       return json({ ignored: true })
     }
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, getSecretKey())
     const { data: event, error: eventError } = await supabase
       .from('place_events')
       .select('id,place_id,circle_id,user_id,event_type,occurred_at')
