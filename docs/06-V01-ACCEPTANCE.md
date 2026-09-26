@@ -17,6 +17,7 @@ Legenda:
 
 ## Círculos
 - ✅ criar círculo
+- ✅ owner excluir círculo com confirmação
 - ✅ entrar por convite
 - ✅ owner/member no banco
 - ✅ admin implementado por Edge Function autenticada
@@ -73,7 +74,8 @@ Legenda:
 - ⏳ aviso de atualização dentro do APK
 
 ## Fora da V0.1
-- ⏳ eventos de entrada/saída em Places
+- ✅ eventos de entrada/saída em Places (primeira camada server-side)
+- ⏳ notificações push de entrada/saída
 - ⏳ notificações
 - ⏳ timeline completa do histórico
 - ⏳ retenção de histórico

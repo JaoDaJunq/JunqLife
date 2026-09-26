@@ -212,7 +212,7 @@ export default function CircleMap({
               id={`place-radius-fill-${place.id}`}
               type="fill"
               paint={{
-                'fill-color': '#7C5CFC',
+                'fill-color': '#D4AF37',
                 'fill-opacity': 0.12,
               }}
             />
@@ -220,7 +220,7 @@ export default function CircleMap({
               id={`place-radius-line-${place.id}`}
               type="line"
               paint={{
-                'line-color': '#7C5CFC',
+                'line-color': '#D4AF37',
                 'line-width': 2,
                 'line-opacity': 0.7,
               }}
@@ -269,7 +269,7 @@ export default function CircleMap({
               id="selected-history-route-line"
               type="line"
               paint={{
-                'line-color': '#356AE6',
+                'line-color': '#7A3B8F',
                 'line-width': 4,
                 'line-opacity': 0.8,
               }}
@@ -359,13 +359,13 @@ const styles = StyleSheet.create({
     height: 46,
     paddingHorizontal: 8,
     borderRadius: 23,
-    backgroundColor: '#101418',
+    backgroundColor: '#4B1F5B',
     borderWidth: 3,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  markerSelf: { backgroundColor: '#356AE6' },
+  markerSelf: { backgroundColor: '#7A3B8F' },
   markerSelected: { transform: [{ scale: 1.16 }] },
   markerText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
   markerPhoto: { width: '100%', height: '100%', borderRadius: 999 },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#7C5CFC',
+    backgroundColor: '#D4AF37',
     borderWidth: 3,
     borderColor: '#FFFFFF',
     alignItems: 'center',
@@ -386,11 +386,11 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     backgroundColor: '#FFFFFF',
     borderWidth: 3,
-    borderColor: '#7C5CFC',
+    borderColor: '#D4AF37',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  draftMarkerText: { color: '#7C5CFC', fontWeight: '900', fontSize: 24, lineHeight: 25 },
+  draftMarkerText: { color: '#D4AF37', fontWeight: '900', fontSize: 24, lineHeight: 25 },
   markerPointer: {
     width: 0,
     height: 0,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
   },
-  fitButtonText: { color: '#101418', fontWeight: '800', fontSize: 13 },
+  fitButtonText: { color: '#4B1F5B', fontWeight: '800', fontSize: 13 },
   zoomControls: {
     position: 'absolute',
     right: 14,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mapControlText: { color: '#101418', fontWeight: '700', fontSize: 27, lineHeight: 29 },
+  mapControlText: { color: '#4B1F5B', fontWeight: '700', fontSize: 27, lineHeight: 29 },
   controlDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#D8DDE1' },
   selfButton: {
     position: 'absolute',
@@ -442,8 +442,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  selfButtonIcon: { color: '#356AE6', fontSize: 20, fontWeight: '900' },
-  selfButtonText: { color: '#101418', fontWeight: '800', fontSize: 12 },
+  selfButtonIcon: { color: '#7A3B8F', fontSize: 20, fontWeight: '900' },
+  selfButtonText: { color: '#4B1F5B', fontWeight: '800', fontSize: 12 },
   longPressHint: {
     position: 'absolute',
     left: 14,

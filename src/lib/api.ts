@@ -31,6 +31,15 @@ export async function createCircle(name: string, userId: string) {
   return data as Circle
 }
 
+export async function deleteCircle(circleId: string) {
+  const { error } = await supabase
+    .from('circles')
+    .delete()
+    .eq('id', circleId)
+
+  if (error) throw error
+}
+
 export async function createInvite(circleId: string) {
   const { data, error } = await supabase.functions.invoke('circle-invite-create', {
     body: {
@@ -143,6 +152,31 @@ export async function deletePlace(placeId: string) {
     .eq('id', placeId)
 
   if (error) throw error
+}
+
+export type PlaceEvent = {
+  id: number
+  place_id: string
+  circle_id: string
+  user_id: string
+  event_type: 'entered' | 'exited'
+  latitude: number
+  longitude: number
+  accuracy_m: number | null
+  occurred_at: string
+  created_at: string
+}
+
+export async function listPlaceEvents(circleId: string, limit = 20) {
+  const { data, error } = await supabase
+    .from('place_events')
+    .select('id,place_id,circle_id,user_id,event_type,latitude,longitude,accuracy_m,occurred_at,created_at')
+    .eq('circle_id', circleId)
+    .order('occurred_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return (data ?? []) as PlaceEvent[]
 }
 
 

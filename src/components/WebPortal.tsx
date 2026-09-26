@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/src/context/AuthProvider'
 import { getAvatarPublicUrl, getMyProfile, updateMyProfile, uploadMyAvatar } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
+import Brand from '@/src/components/Brand'
 
 const RELEASES_API = 'https://api.github.com/repos/JaoDaJunq/JunqLife/releases?per_page=5'
 const FALLBACK_DOWNLOAD = 'https://github.com/JaoDaJunq/JunqLife/releases/latest/download/JunqLife.apk'
@@ -134,7 +135,7 @@ export default function WebPortal() {
 
   const downloadUrl = downloadAsset?.browser_download_url || FALLBACK_DOWNLOAD
   const releaseVersion =
-    release?.tag_name || `v${Constants.expoConfig?.version ?? '0.1.14'}`
+    release?.tag_name || `v${Constants.expoConfig?.version ?? '0.1.16'}`
   const releaseSize = formatBytes(downloadAsset?.size)
 
   const avatarUrl = getAvatarPublicUrl(profileAvatarPath)
@@ -199,7 +200,7 @@ export default function WebPortal() {
         <View style={styles.shell}>
           <View style={styles.topbar}>
             <View>
-              <Text style={styles.brand}>JunqLife</Text>
+              <Brand size={34} tagline />
               <Text style={styles.kicker}>CENTRAL DO APP</Text>
             </View>
             <Pressable onPress={() => void supabase.auth.signOut()}>
@@ -400,21 +401,21 @@ export default function WebPortal() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F4F6F8' },
+  safe: { flex: 1, backgroundColor: '#FAF7EF' },
   outer: { flexGrow: 1, padding: 20 },
   shell: { width: '100%', maxWidth: 920, alignSelf: 'center', gap: 18 },
   topbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brand: { fontSize: 34, fontWeight: '900', color: '#101418', letterSpacing: -1.2 },
-  kicker: { color: '#78838C', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
-  link: { color: '#356AE6', fontWeight: '800' },
+  brand: { fontSize: 34, fontWeight: '900', color: '#4B1F5B', letterSpacing: -1.2 },
+  kicker: { color: '#7A3B8F', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  link: { color: '#7A3B8F', fontWeight: '800' },
   hero: {
-    backgroundColor: '#101418',
+    backgroundColor: '#4B1F5B',
     borderRadius: 28,
     padding: 28,
     gap: 18,
   },
   heroCopy: { gap: 7 },
-  heroEyebrow: { color: '#8CA9FF', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
+  heroEyebrow: { color: '#D4AF37', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
   heroTitle: { color: '#FFFFFF', fontSize: 32, fontWeight: '900', maxWidth: 620 },
   heroText: { color: '#C5CDD5', fontSize: 16, lineHeight: 23, maxWidth: 680 },
   statusPill: {
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
     padding: 22,
     gap: 12,
   },
-  downloadCard: { backgroundColor: '#EEF3FF' },
+  downloadCard: { backgroundColor: '#F4EFF6' },
   cardEyebrow: { color: '#77838D', fontSize: 10, fontWeight: '900', letterSpacing: 1.6 },
   cardTitle: { color: '#151A1F', fontSize: 22, fontWeight: '900' },
   cardText: { color: '#66727C', lineHeight: 21 },
@@ -460,15 +461,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#101418',
+    color: '#24172B',
   },
   secondaryButton: { backgroundColor: '#E8ECEF', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  secondaryButtonText: { color: '#101418', fontWeight: '900' },
+  secondaryButtonText: { color: '#4B1F5B', fontWeight: '900' },
   versionBlock: { gap: 2, marginVertical: 4 },
   versionLabel: { color: '#70809A', fontSize: 11, fontWeight: '800' },
-  version: { color: '#173E91', fontSize: 34, fontWeight: '900' },
+  version: { color: '#4B1F5B', fontSize: 34, fontWeight: '900' },
   versionDate: { color: '#6B7890', fontSize: 12 },
-  downloadButton: { backgroundColor: '#356AE6', borderRadius: 15, paddingVertical: 16, alignItems: 'center' },
+  downloadButton: { backgroundColor: '#D4AF37', borderRadius: 15, paddingVertical: 16, alignItems: 'center' },
   downloadButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
   disabled: { opacity: 0.45 },
   smallText: { color: '#6F7C89', fontSize: 12, lineHeight: 18 },
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#101418',
+    backgroundColor: '#4B1F5B',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 30,

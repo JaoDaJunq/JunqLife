@@ -15,11 +15,13 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import WebPortal from '@/src/components/WebPortal'
+import Brand from '@/src/components/Brand'
 import { useAuth } from '@/src/context/AuthProvider'
 import {
   acceptInvite,
   createCircle,
   createInvite,
+  deleteCircle,
   getSharing,
   listCircles,
   setSharing,
@@ -189,7 +191,7 @@ function AuthScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.authPage} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
-          <Text style={styles.brand}>JunqLife</Text>
+          <Brand size={42} tagline />
           <Text style={styles.subtitle}>
             {isWeb
               ? 'Crie sua conta, gerencie seu acesso e baixe o aplicativo.'
@@ -323,7 +325,7 @@ function RecoveryScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.authPage} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
-          <Text style={styles.brand}>JunqLife</Text>
+          <Brand size={42} tagline />
           <Text style={styles.subtitle}>Defina uma nova senha para sua conta.</Text>
         </View>
 
@@ -529,12 +531,45 @@ function HomeScreen() {
     }
   }
 
+  const handleDeleteCircle = (circle: Circle) => {
+    if (!user || circle.owner_id !== user.id || busy) return
+
+    Alert.alert(
+      'Excluir círculo?',
+      `“${circle.name}” será removido junto com membros, locais, eventos e histórico compartilhado. Essa ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir círculo',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true)
+            try {
+              await deleteCircle(circle.id)
+              setSharingState((current) => {
+                const next = { ...current }
+                delete next[circle.id]
+                return next
+              })
+              setCircles((current) => current.filter((item) => item.id !== circle.id))
+              Alert.alert('Círculo excluído', 'O círculo e seus dados relacionados foram removidos.')
+            } catch (error) {
+              Alert.alert('Não foi possível excluir', errorMessage(error))
+            } finally {
+              setBusy(false)
+            }
+          },
+        },
+      ],
+    )
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>JUNQLIFE</Text>
+            <Brand size={30} />
             <Text style={styles.heading}>Buenas, {displayName}.</Text>
           </View>
           <Pressable onPress={handleSignOut}>
@@ -673,6 +708,16 @@ function HomeScreen() {
                   secondary
                 />
 
+                {isOwner && (
+                  <Pressable
+                    onPress={() => handleDeleteCircle(circle)}
+                    disabled={busy}
+                    style={styles.deleteCircleButton}
+                  >
+                    <Text style={styles.deleteCircleText}>Excluir círculo</Text>
+                  </Pressable>
+                )}
+
                 <View style={styles.sharingRow}>
                   <View style={styles.flex}>
                     <Text style={styles.sharingTitle}>Compartilhar localização</Text>
@@ -706,23 +751,23 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F4F6F8' },
+  safe: { flex: 1, backgroundColor: '#FAF7EF' },
   center: { alignItems: 'center', justifyContent: 'center' },
   page: { padding: 20, paddingBottom: 60, gap: 16 },
   authPage: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 28 },
   brandBlock: { gap: 6 },
-  brand: { fontSize: 42, fontWeight: '900', letterSpacing: -1.5, color: '#101418' },
-  subtitle: { fontSize: 16, color: '#65707B' },
+  brand: { fontSize: 42, fontWeight: '900', letterSpacing: -1.5, color: '#4B1F5B' },
+  subtitle: { fontSize: 16, color: '#756A7D' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: '#68737E' },
-  heading: { fontSize: 28, fontWeight: '800', color: '#101418', marginTop: 4 },
-  hero: { backgroundColor: '#101418', borderRadius: 28, padding: 24, gap: 8 },
+  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: '#7A3B8F' },
+  heading: { fontSize: 28, fontWeight: '800', color: '#24172B', marginTop: 4 },
+  hero: { backgroundColor: '#4B1F5B', borderRadius: 28, padding: 24, gap: 8 },
   heroTitle: { color: 'white', fontSize: 26, fontWeight: '800' },
   heroText: { color: '#C5CDD5', lineHeight: 21 },
-  card: { backgroundColor: 'white', padding: 20, borderRadius: 22, gap: 12 },
+  card: { backgroundColor: 'white', padding: 20, borderRadius: 22, gap: 12, borderWidth: 1, borderColor: '#F0E8F3' },
   trackingCard: { backgroundColor: '#E8F7EE', padding: 20, borderRadius: 22, gap: 12 },
   updateCard: {
-    backgroundColor: '#EEF3FF',
+    backgroundColor: '#F4EFF6',
     padding: 18,
     borderRadius: 22,
     gap: 14,
@@ -730,33 +775,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   updateEyebrow: { color: '#5A75B8', fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
-  updateTitle: { color: '#173E91', fontSize: 19, fontWeight: '900', marginTop: 3 },
+  updateTitle: { color: '#4B1F5B', fontSize: 19, fontWeight: '900', marginTop: 3 },
   updateText: { color: '#62708A', lineHeight: 18, fontSize: 13, marginTop: 3 },
-  updateButton: { backgroundColor: '#356AE6', borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11 },
+  updateButton: { backgroundColor: '#D4AF37', borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11 },
   updateButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 12 },
   trackingDescription: { color: '#587064', lineHeight: 19, marginTop: 4 },
   statusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#AAB5AF' },
   statusDotActive: { backgroundColor: '#18A558' },
   cardTitle: { fontSize: 19, fontWeight: '800', color: '#151A1F' },
-  input: { backgroundColor: '#F2F4F6', borderRadius: 14, paddingHorizontal: 15, paddingVertical: 14, fontSize: 16, color: '#101418' },
+  input: { backgroundColor: '#F4EFF6', borderRadius: 14, paddingHorizontal: 15, paddingVertical: 14, fontSize: 16, color: '#24172B' },
   passwordWrap: { position: 'relative', justifyContent: 'center' },
   passwordInput: { paddingRight: 82 },
   passwordToggle: { position: 'absolute', right: 14, paddingVertical: 10, paddingHorizontal: 2 },
-  passwordToggleText: { color: '#356AE6', fontWeight: '800', fontSize: 13 },
+  passwordToggleText: { color: '#7A3B8F', fontWeight: '800', fontSize: 13 },
   codeInput: { letterSpacing: 3, fontWeight: '800', textAlign: 'center' },
-  button: { backgroundColor: '#101418', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  buttonSecondary: { backgroundColor: '#E8ECEF' },
+  button: { backgroundColor: '#4B1F5B', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  buttonSecondary: { backgroundColor: '#F0E6F3' },
   buttonDisabled: { opacity: 0.5 },
+  deleteCircleButton: { alignItems: 'center', paddingVertical: 10 },
+  deleteCircleText: { color: '#B3362B', fontWeight: '900' },
   buttonText: { color: 'white', fontWeight: '800', fontSize: 15 },
-  buttonSecondaryText: { color: '#101418' },
-  link: { color: '#356AE6', fontWeight: '700' },
+  buttonSecondaryText: { color: '#4B1F5B' },
+  link: { color: '#7A3B8F', fontWeight: '700' },
   linkMuted: { color: '#66727C', fontWeight: '700', marginTop: 2 },
   recoveryHelp: { color: '#66727C', lineHeight: 20 },
-  centralAccess: { backgroundColor: '#EEF3FF', borderRadius: 14, padding: 14, gap: 8 },
+  centralAccess: { backgroundColor: '#F4EFF6', borderRadius: 14, padding: 14, gap: 8 },
   centralAccessText: { color: '#5F6D7A', lineHeight: 19, fontSize: 13 },
-  inviteCard: { backgroundColor: '#E7F0FF', padding: 22, borderRadius: 22, gap: 8 },
+  inviteCard: { backgroundColor: '#F4EFF6', padding: 22, borderRadius: 22, gap: 8 },
   inviteLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#4B658E' },
-  inviteCode: { fontSize: 36, fontWeight: '900', letterSpacing: 5, color: '#163E84' },
+  inviteCode: { fontSize: 36, fontWeight: '900', letterSpacing: 5, color: '#4B1F5B' },
   inviteHelp: { color: '#536B8D', lineHeight: 20, marginBottom: 4 },
   sectionHeader: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontSize: 21, fontWeight: '800', color: '#151A1F' },

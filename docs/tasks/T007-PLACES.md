@@ -1,4 +1,4 @@
-# T007 - Places V0.3A
+# T007 - Places V0.3A / V0.3B
 
 ## Objetivo
 Adicionar locais salvos por círculo sem alterar o pipeline de tracking.
@@ -15,10 +15,14 @@ Adicionar locais salvos por círculo sem alterar o pipeline de tracking.
 - owner pode excluir;
 - RLS existente continua sendo a fronteira de autorização.
 
+## V0.3B entregue
+- avaliação dos locais durante o ingest autenticado;
+- estado privado de presença por usuário/local;
+- eventos de entrada e saída com histerese baseada na precisão do GPS;
+- consulta dos últimos eventos do círculo no aplicativo.
+
 ## Fora deste commit
-- eventos de entrada/saída;
-- notificações;
-- avaliação de geofence no ingest.
+- notificações push nativas e preferências por local.
 
 ## Critério de teste
 1. abrir um círculo;

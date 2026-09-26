@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -11,7 +11,16 @@ import {
 import { loadTodayHistory, type HistorySummary } from '@/src/lib/history'
 import { supabase } from '@/src/lib/supabase'
 import { useAuth } from '@/src/context/AuthProvider'
-import { createPlace, deletePlace, getAvatarPublicUrl, listPlaces, type Place } from '@/src/lib/api'
+import { notifyPlaceEvent } from '@/src/lib/notifications'
+import {
+  createPlace,
+  deletePlace,
+  getAvatarPublicUrl,
+  listPlaceEvents,
+  listPlaces,
+  type Place,
+  type PlaceEvent,
+} from '@/src/lib/api'
 
 function relativeTime(value: string, now: number) {
   const diffSeconds = Math.max(0, Math.floor((now - new Date(value).getTime()) / 1000))
@@ -40,20 +49,27 @@ export default function CircleMapScreen() {
   const [history, setHistory] = useState<HistorySummary | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [places, setPlaces] = useState<Place[]>([])
+  const [placeEvents, setPlaceEvents] = useState<PlaceEvent[]>([])
   const [placeName, setPlaceName] = useState('')
   const [placeRadius, setPlaceRadius] = useState('100')
   const [placeBusy, setPlaceBusy] = useState(false)
   const [placeDraft, setPlaceDraft] = useState<[number, number] | null>(null)
+  const placesRef = useRef<Place[]>([])
+  const membersRef = useRef<CircleMapState['members']>([])
 
   const refresh = useCallback(async () => {
     if (!circleId) return
     try {
-      const [next, nextPlaces] = await Promise.all([
+      const [next, nextPlaces, nextEvents] = await Promise.all([
         loadCircleMap(circleId),
         listPlaces(circleId),
+        listPlaceEvents(circleId),
       ])
       setState(next)
       setPlaces(nextPlaces)
+      setPlaceEvents(nextEvents)
+      placesRef.current = nextPlaces
+      membersRef.current = next.members
       setSelectedUserId((current) => current ?? user?.id ?? next.members[0]?.userId ?? null)
     } catch (error) {
       Alert.alert('Não foi possível abrir o mapa', error instanceof Error ? error.message : 'Tente novamente.')
@@ -128,6 +144,32 @@ export default function CircleMapScreen() {
           })
         },
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'place_events',
+          filter: `circle_id=eq.${circleId}`,
+        },
+        (payload) => {
+          const event = payload.new as unknown as PlaceEvent
+          if (!event?.id) return
+          const place = placesRef.current.find((item) => item.id === event.place_id)
+          const member = membersRef.current.find((item) => item.userId === event.user_id)
+          if (place && member) {
+            void notifyPlaceEvent({
+              placeName: place.name,
+              memberName: member.displayName,
+              eventType: event.event_type,
+            }).catch(() => undefined)
+          }
+          setPlaceEvents((current) => [
+            event,
+            ...current.filter((item) => item.id !== event.id),
+          ].slice(0, 20))
+        },
+      )
       .subscribe()
 
     return () => {
@@ -195,7 +237,11 @@ export default function CircleMapScreen() {
         radiusM,
         userId: user.id,
       })
-      setPlaces((current) => [...current, place])
+      setPlaces((current) => {
+        const next = [...current, place]
+        placesRef.current = next
+        return next
+      })
       setPlaceName('')
       setPlaceRadius('100')
       setPlaceDraft(null)
@@ -222,7 +268,11 @@ export default function CircleMapScreen() {
             setPlaceBusy(true)
             try {
               await deletePlace(place.id)
-              setPlaces((current) => current.filter((item) => item.id !== place.id))
+              setPlaces((current) => {
+                const next = current.filter((item) => item.id !== place.id)
+                placesRef.current = next
+                return next
+              })
             } catch (error) {
               Alert.alert('Não foi possível excluir', error instanceof Error ? error.message : 'Tente novamente.')
             } finally {
@@ -454,6 +504,41 @@ export default function CircleMapScreen() {
         )}
 
         <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Atividade dos locais</Text>
+          <Text style={styles.memberCount}>{placeEvents.length}</Text>
+        </View>
+
+        {placeEvents.length === 0 ? (
+          <View style={styles.emptyPlaceCard}>
+            <Text style={styles.emptyPlaceTitle}>Nenhuma entrada ou saída registrada</Text>
+            <Text style={styles.emptyPlaceText}>
+              Quando um membro entrar ou sair de um local, o evento aparecerá aqui.
+            </Text>
+          </View>
+        ) : (
+          placeEvents.map((event) => {
+            const place = places.find((item) => item.id === event.place_id)
+            const member = state.members.find((item) => item.userId === event.user_id)
+            const entered = event.event_type === 'entered'
+            return (
+              <View key={event.id} style={styles.eventCard}>
+                <View style={[styles.eventIcon, entered ? styles.eventEntered : styles.eventExited]}>
+                  <Text style={styles.eventIconText}>{entered ? '↓' : '↑'}</Text>
+                </View>
+                <View style={styles.flex}>
+                  <Text style={styles.eventTitle}>
+                    {member?.displayName ?? 'Membro'} {entered ? 'entrou em' : 'saiu de'} {place?.name ?? 'um local'}
+                  </Text>
+                  <Text style={styles.eventMeta}>
+                    {new Date(event.occurred_at).toLocaleString()} · precisão {event.accuracy_m == null ? '—' : `±${Math.round(event.accuracy_m)} m`}
+                  </Text>
+                </View>
+              </View>
+            )
+          })
+        )}
+
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Membros</Text>
           <Text style={styles.memberCount}>{state.members.length}</Text>
         </View>
@@ -509,36 +594,43 @@ export default function CircleMapScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F4F6F8' },
+  safe: { flex: 1, backgroundColor: '#FAF7EF' },
   center: { alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 12, paddingBottom: 12 },
   mapShell: { paddingHorizontal: 18, paddingBottom: 12 },
   detailsScroll: { flex: 1 },
   detailsPage: { paddingHorizontal: 18, paddingTop: 4, paddingBottom: 50, gap: 16 },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 30, color: '#161C21', lineHeight: 32, marginTop: -2 },
+  backText: { fontSize: 30, color: '#4B1F5B', lineHeight: 32, marginTop: -2 },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.6, color: '#77818A' },
-  heading: { fontSize: 25, fontWeight: '900', color: '#11161A', marginTop: 2 },
-  link: { color: '#356AE6', fontWeight: '800' },
+  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.6, color: '#7A3B8F' },
+  heading: { fontSize: 25, fontWeight: '900', color: '#24172B', marginTop: 2 },
+  link: { color: '#7A3B8F', fontWeight: '800' },
   errorTitle: { fontSize: 18, fontWeight: '800', color: '#1B2228' },
   selectedCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 18, gap: 16 },
-  placeCreateCard: { backgroundColor: '#F0ECFF', borderRadius: 22, padding: 18, gap: 12 },
+  placeCreateCard: { backgroundColor: '#F4EFF6', borderRadius: 22, padding: 18, gap: 12 },
   placeCreateHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardTitle: { fontSize: 18, fontWeight: '900', color: '#171D22' },
   placeHelp: { color: '#665D82', lineHeight: 19 },
   input: { backgroundColor: '#FFFFFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: '#161C21' },
-  primaryButton: { backgroundColor: '#101418', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  primaryButton: { backgroundColor: '#4B1F5B', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   primaryButtonText: { color: '#FFFFFF', fontWeight: '900' },
   buttonDisabled: { opacity: 0.5 },
   emptyPlaceCard: { backgroundColor: '#E9EDF0', borderRadius: 18, padding: 16 },
   emptyPlaceTitle: { color: '#303941', fontWeight: '900' },
   emptyPlaceText: { color: '#6C7780', marginTop: 4, lineHeight: 18 },
   placeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', padding: 14, borderRadius: 18 },
-  placeIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#7C5CFC', alignItems: 'center', justifyContent: 'center' },
+  placeIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#D4AF37', alignItems: 'center', justifyContent: 'center' },
   placeIconText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
   placeName: { color: '#1C2329', fontWeight: '900' },
   placeMeta: { color: '#7A858E', fontSize: 13, marginTop: 2 },
+  eventCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', padding: 14, borderRadius: 18 },
+  eventIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  eventEntered: { backgroundColor: '#E8F5EC' },
+  eventExited: { backgroundColor: '#FFF0E0' },
+  eventIconText: { fontSize: 20, fontWeight: '900', color: '#27323A' },
+  eventTitle: { color: '#1C2329', fontWeight: '900' },
+  eventMeta: { color: '#7A858E', fontSize: 12, marginTop: 3 },
   deleteLink: { color: '#C0392B', fontWeight: '800' },
   memberHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#101418', alignItems: 'center', justifyContent: 'center' },

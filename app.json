@@ -2,7 +2,8 @@
   "expo": {
     "name": "JunqLife",
     "slug": "junqlife",
-    "version": "0.1.14",
+    "version": "0.1.16",
+    "icon": "./assets/brand/junqlife-icon.png",
     "orientation": "portrait",
     "scheme": "junqlife",
     "userInterfaceStyle": "automatic",
@@ -28,15 +29,17 @@
         "FOREGROUND_SERVICE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 15
+      "versionCode": 17
     },
     "web": {
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/brand/junqlife-icon.png"
     },
     "plugins": [
       "expo-router",
       "expo-sqlite",
       "expo-secure-store",
+      "expo-notifications",
       "expo-dev-client",
       "@maplibre/maplibre-react-native",
       [
