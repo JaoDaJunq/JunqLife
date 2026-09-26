@@ -22,6 +22,7 @@ import {
   type Circle,
   type CircleMemberDetails,
 } from '@/src/lib/api'
+import { BrandMark } from '@/src/components/Brand'
 
 function errorMessage(error: unknown, fallback = 'Tente novamente.') {
   if (error instanceof Error && error.message) return error.message
@@ -243,6 +244,7 @@ export default function CircleManagementScreen() {
             <Text style={styles.eyebrow}>CÍRCULO</Text>
             <Text style={styles.heading}>{circle.name}</Text>
           </View>
+          <BrandMark size={28} />
           <Pressable onPress={() => void refresh()}>
             <Text style={styles.link}>Atualizar</Text>
           </Pressable>

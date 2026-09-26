@@ -12,6 +12,7 @@ import { loadTodayHistory, type HistorySummary } from '@/src/lib/history'
 import { supabase } from '@/src/lib/supabase'
 import { useAuth } from '@/src/context/AuthProvider'
 import { notifyPlaceEvent } from '@/src/lib/notifications'
+import { BrandMark } from '@/src/components/Brand'
 import {
   createPlace,
   deletePlace,
@@ -326,6 +327,7 @@ export default function CircleMapScreen() {
             <Text style={styles.eyebrow}>MAPA AO VIVO</Text>
             <Text style={styles.heading}>{state.circle.name}</Text>
           </View>
+          <BrandMark size={28} />
 
           <Pressable onPress={refresh}>
             <Text style={styles.link}>Atualizar</Text>
