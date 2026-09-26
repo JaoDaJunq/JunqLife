@@ -1,0 +1,53 @@
+name: Build iOS TestFlight candidate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'src/**'
+      - 'assets/**'
+      - 'plugins/**'
+      - 'app.json'
+      - 'eas.json'
+      - 'package.json'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: EAS iOS production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Authenticate with Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Queue iOS production build
+        run: eas build --platform ios --profile production --non-interactive --no-wait
+
+      - name: Add build instructions
+        run: |
+          {
+            echo "## iOS build queued"
+            echo "The .ipa is built by EAS and can be submitted to TestFlight after Apple credentials are configured in EAS." 
+          } >> "$GITHUB_STEP_SUMMARY"

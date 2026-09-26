@@ -31,6 +31,14 @@ for (const contract of ['assembleRelease', 'upload-artifact@v4', 'gh release']) 
   if (!workflow.includes(contract)) failures.push(`Android release workflow missing ${contract}`)
 }
 
+const iosWorkflow = read('.github/workflows/ios-build.yml')
+for (const contract of ['expo/expo-github-action@v8', 'secrets.EXPO_TOKEN', 'eas build --platform ios', '--profile production']) {
+  if (!iosWorkflow.includes(contract)) failures.push(`iOS workflow missing ${contract}`)
+}
+
+const eas = JSON.parse(read('eas.json'))
+if (eas.build?.production?.autoIncrement !== true) failures.push('EAS production profile must auto-increment build numbers')
+
 if (failures.length) {
   console.error(failures.join('\n'))
   process.exit(1)

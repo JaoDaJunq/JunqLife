@@ -2,7 +2,7 @@
   "expo": {
     "name": "JunqLife",
     "slug": "junqlife",
-    "version": "0.1.17",
+    "version": "0.1.18",
     "icon": "./assets/brand/junqlife-icon.png",
     "orientation": "portrait",
     "scheme": "junqlife",
@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.junq.junqlife",
+      "buildNumber": "18",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "O JunqLife usa sua localização para compartilhar sua posição com os círculos que você ativar.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "O JunqLife usa localização em segundo plano enquanto o rastreamento estiver ligado.",
@@ -29,7 +30,7 @@
         "FOREGROUND_SERVICE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 18
+      "versionCode": 19
     },
     "web": {
       "output": "static",
