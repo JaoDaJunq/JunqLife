@@ -16,6 +16,7 @@ begin
       'table', 'place_events',
       'schema', 'public',
       'record', jsonb_build_object(
+        'id', NEW.id,
         'place_id', NEW.place_id,
         'circle_id', NEW.circle_id,
         'user_id', NEW.user_id,

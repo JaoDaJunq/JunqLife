@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.95.0'
 
 type PlaceEvent = {
+  id: number
   place_id: string
   circle_id: string
   user_id: string
@@ -41,6 +42,7 @@ function isPlaceEvent(value: unknown): value is PlaceEvent {
   if (!value || typeof value !== 'object') return false
   const record = value as Partial<PlaceEvent>
   return Boolean(
+    record.id &&
     record.place_id &&
       record.circle_id &&
       record.user_id &&
@@ -59,7 +61,21 @@ Deno.serve(async (request) => {
     }
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, getSecretKey())
-    const event = payload.record
+    const { data: event, error: eventError } = await supabase
+      .from('place_events')
+      .select('id,place_id,circle_id,user_id,event_type,occurred_at')
+      .eq('id', payload.record.id)
+      .maybeSingle()
+
+    if (eventError) throw eventError
+    if (!event) return json({ ignored: true, reason: 'event_not_found' })
+
+    const { error: deliveryError } = await supabase
+      .from('place_push_deliveries')
+      .insert({ event_id: event.id })
+
+    if (deliveryError?.code === '23505') return json({ sent: 0, reason: 'already_processed' })
+    if (deliveryError) throw deliveryError
 
     const [{ data: place }, { data: actor }, { data: members }] = await Promise.all([
       supabase.from('places').select('name').eq('id', event.place_id).maybeSingle(),

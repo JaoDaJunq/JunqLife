@@ -33,6 +33,8 @@ const functionSource = fs.readFileSync(path.join(root, 'supabase/functions/place
 for (const required of [
   "payload.type !== 'INSERT'",
   "payload.table !== 'place_events'",
+  "from('place_events')",
+  "from('place_push_deliveries')",
   "from('push_tokens')",
   "https://exp.host/--/api/v2/push/send",
 ]) {
