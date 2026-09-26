@@ -42,6 +42,11 @@ for (const required of [
 }
 if (!functionSource.includes('x-junqlife-webhook-secret')) violations.push('place-event-push missing private webhook authentication')
 
+const webhookMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260926190000_fix_pg_net_http_post.sql'), 'utf8')
+for (const required of ['net.http_post', 'timeout_milliseconds := 5000', "'x-junqlife-webhook-secret'"]) {
+  if (!webhookMigration.includes(required)) violations.push(`webhook migration missing contract: ${required}`)
+}
+
 if (violations.length) {
   console.error(violations.join('\n'))
   process.exit(1)

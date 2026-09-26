@@ -1,13 +1,3 @@
-create table if not exists public.push_webhook_secrets (
-  id text primary key,
-  secret text not null check (length(secret) >= 32),
-  created_at timestamptz not null default now()
-);
-
-alter table public.push_webhook_secrets enable row level security;
-revoke all on public.push_webhook_secrets from public, anon, authenticated;
-grant select on public.push_webhook_secrets to service_role;
-
 create or replace function private.enqueue_place_event_push()
 returns trigger
 language plpgsql
