@@ -707,6 +707,11 @@ function HomeScreen() {
                   onPress={() => router.push({ pathname: '/circle', params: { circleId: circle.id } })}
                   secondary
                 />
+                <Button
+                  title="Ver histórico"
+                  onPress={() => router.push({ pathname: '/history' })}
+                  secondary
+                />
 
                 {isOwner && (
                   <Pressable
