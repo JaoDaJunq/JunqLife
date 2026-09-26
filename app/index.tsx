@@ -24,6 +24,7 @@ import {
   deleteCircle,
   getSharing,
   listCircles,
+  removePushTokens,
   setSharing,
   type Circle,
 } from '@/src/lib/api'
@@ -521,6 +522,7 @@ function HomeScreen() {
         await stopTracking()
       }
     } finally {
+      if (user) await removePushTokens(user.id).catch(() => undefined)
       await supabase.auth.signOut()
     }
   }

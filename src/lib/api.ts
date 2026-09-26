@@ -101,6 +101,11 @@ export async function registerPushToken(input: {
   if (error) throw error
 }
 
+export async function removePushTokens(userId: string) {
+  const { error } = await supabase.from('push_tokens').delete().eq('user_id', userId)
+  if (error) throw error
+}
+
 
 export type Place = {
   id: string
