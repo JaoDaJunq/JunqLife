@@ -29,6 +29,7 @@ import {
 } from '@/src/lib/api'
 import { supabase } from '@/src/lib/supabase'
 import { checkForAppUpdate, type AppUpdate } from '@/src/lib/update'
+import { registerForRemoteNotifications } from '@/src/lib/notifications'
 import {
   TRACKING_SUPPORTED,
   sendPositionNow,
@@ -415,6 +416,11 @@ function HomeScreen() {
         .catch(() => setAppUpdate(null))
     }
   }, [refresh])
+
+  useEffect(() => {
+    if (!user) return
+    registerForRemoteNotifications(user.id).catch(() => undefined)
+  }, [user])
 
   const handleCreate = async () => {
     if (!user || busy) return

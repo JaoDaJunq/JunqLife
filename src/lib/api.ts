@@ -89,6 +89,18 @@ export async function getSharing(circleId: string, userId: string) {
   return Boolean(data.sharing_enabled)
 }
 
+export async function registerPushToken(input: {
+  userId: string
+  token: string
+  platform: 'android' | 'ios'
+}) {
+  const { error } = await supabase.from('push_tokens').upsert(
+    { user_id: input.userId, expo_push_token: input.token, platform: input.platform },
+    { onConflict: 'user_id,expo_push_token' },
+  )
+  if (error) throw error
+}
+
 
 export type Place = {
   id: string
